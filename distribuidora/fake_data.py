@@ -1,6 +1,6 @@
 from mysql_codes import *
 
-def generate_data(connection, cursor):
+def generate_data():
     """Generate data for the database."""
     command = (
         'INSERT INTO pessoa (nome, email, cpf, data_nascimento) VALUES '
@@ -30,7 +30,7 @@ def generate_data(connection, cursor):
         '("cintia", "cintia.paz@gmail.com", "35791357914", "1994-04-04"), '
         '("darlan", "darlan.oliveira@gmail.com", "46802468025", "1987-01-30")'
     )
-    execute_command(connection, cursor, command)
+    execute_command(command)
     print('Data generated successfully.')
 
 

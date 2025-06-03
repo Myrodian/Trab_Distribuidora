@@ -4,11 +4,10 @@ from fake_data import *
 
 
 if __name__ == '__main__':
-    connection, cursor = create_connection()
-    generate_data(connection, cursor)
+    generate_data()
 
     command = 'SELECT * FROM pessoa'
-    results = read_data(cursor, command)
+    results = read_data(command)
     print(type(results))
     print(results)
-    close_connection(connection, cursor)
+    close_connection()

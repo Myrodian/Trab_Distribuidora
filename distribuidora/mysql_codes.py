@@ -1,21 +1,18 @@
 import mysql.connector
 
-def create_connection():
-    """Create a connection to the MySQL database."""
-    connection = mysql.connector.connect(
+connection = mysql.connector.connect(
         host='localhost',
         user = 'root',
         password = 'root',
         database = 'distribuidora'
     )
-    cursor = connection.cursor()
-    return connection, cursor
+cursor = connection.cursor()
 
-def close_connection(connection, cursor):
+def close_connection():
     cursor.close()
     connection.close()
 
-def execute_command(connection, cursor , command):
+def execute_command(command):
     """Execute a command on the MySQL database."""
     try:
         cursor.execute(command)
@@ -25,7 +22,7 @@ def execute_command(connection, cursor , command):
         print(f"Error: {err}")
         return False
 
-def read_data(cursor, command):
+def read_data(command):
     """Read data from the MySQL database."""
     try:
         cursor.execute(command)
