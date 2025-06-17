@@ -500,5 +500,5 @@ def delete_fornecedor():
         print("Erro ao deletar fornecedor:", e)
 
 if __name__ == '__main__':
-
+    generate_data()
     close_connection()
