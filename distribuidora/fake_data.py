@@ -41,7 +41,12 @@ def generate_data():
             '("leonardo", "leonardo.mendes@gmail.com", "15915915915", "1988-12-01"), '
             '("marcela", "marcela.ferraz@gmail.com", "75375375375", "1992-09-18"), '
             '("nicolas", "nicolas.souza@gmail.com", "25825825825", "1996-06-06"), '
-            '("olivia", "olivia.ramos@gmail.com", "36936936936", "1990-04-04")'
+            '("olivia", "olivia.ramos@gmail.com", "36936936936", "1990-04-04"), '
+            '("paulo", "paulo.vieira@gmail.com", "11122233344", "1990-01-15"), '
+            '("renata", "renata.souza@gmail.com", "22233344455", "1987-05-23"), '
+            '("samuel", "samuel.lima@gmail.com", "33344455566", "1992-09-30"), '
+            '("talita", "talita.alves@gmail.com", "44455566677", "1995-12-12"), '
+            '("vinicius", "vinicius.martins@gmail.com", "55566677788", "1991-03-03")'
         )
         execute_command(command)
     if not read_data('SELECT id FROM cargo'):
@@ -208,17 +213,17 @@ def generate_data():
         execute_command(command)
     if not read_data('SELECT id FROM cliente'):
         command = (
-            'INSERT INTO Cliente (nome_fantasia, cnpj, numero_endereco, Rua_id, Pessoa_id) VALUES '
-            '(NULL, NULL, 738, 1, 26), '
-            '("Eduardo ME", "12.312.312/0001-12", 512, 2, 27), '
-            '(NULL, NULL, 264, 3, 28), '
-            '(NULL, NULL, 883, 4, 29), '
-            '("Helena Distribuidora", "32.132.132/0001-32", 199, 5, 30), '
-            '(NULL, NULL, 411, 6, 31), '
-            '(NULL, NULL, 620, 7, 32), '
-            '(NULL, NULL, 347, 8, 33), '
-            '("Marcela Atacadista", "75.375.375/0001-75", 185, 9, 34), '
-            '(NULL, NULL, 921, 10, 35)'
+            'INSERT INTO Cliente (nome_fantasia, cnpj, numero_endereco, Rua_id) VALUES '
+            '(NULL, NULL, 738, 1), '
+            '("Eduardo ME", "12.312.312/0001-12", 512, 2), '
+            '(NULL, NULL, 264, 3), '
+            '(NULL, NULL, 883, 4), '
+            '("Helena Distribuidora", "32.132.132/0001-32", 199, 5), '
+            '(NULL, NULL, 411, 6), '
+            '(NULL, NULL, 620, 7), '
+            '(NULL, NULL, 347, 8), '
+            '("Marcela Atacadista", "75.375.375/0001-75", 185, 9), '
+            '(NULL, NULL, 921, 10)'
         )
         execute_command(command)
     if not read_data('SELECT id FROM entrega'):
@@ -295,6 +300,27 @@ def generate_data():
             '(125, 18), '
             '(135, 19), '
             '(105, 20)'
+        )
+        execute_command(command)
+    if not read_data('SELECT * FROM pessoa_has_cliente'):
+        command = (
+            'INSERT INTO Pessoa_has_Cliente (Pessoa_id, Cliente_id) VALUES '
+            '(26, 1), '
+            '(27, 2), '
+            '(28, 2), '
+            '(29, 2), '
+            '(30, 3), '
+            '(31, 4), '
+            '(32, 5), '
+            '(33, 5), '
+            '(34, 5), '
+            '(35, 5), '
+            '(36, 6), '
+            '(37, 7), '
+            '(38, 8), '
+            '(39, 9), '
+            '(40, 9), '
+            '(26, 9)'
         )
         execute_command(command)
 
