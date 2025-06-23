@@ -1,5 +1,6 @@
 from mysql_codes import *
 from fake_data import *
+import datetime
 
 def menu():
     # """Display the main menu."""
@@ -13,88 +14,164 @@ def menu():
 
 ## CREATE PESSOA
 def insert_pessoa():
-    # Insert a new person into the database.
-    nome = str(input("Enter name: "))
-    email = str(input("Enter email: "))
-    cpf = int(input("Enter cpf: "))
-    data_nascimento = input("Enter data nascimento: ")
-    #Check if it already exists by CPF
-    check_query = f'SELECT id FROM pessoa WHERE cpf = "`{cpf}"'
-    result = read_data(check_query)
+    # Dados da pessoa
+    nome = str(input("Entre com o nome: "))
+    email = str(input("Entre com o email: "))
+    cpf = input("Entre com o CPF (apenas números): ")
+    observacoes = str(input("Digite as observações (opcional): "))
+    # Validação do CPF
+    while not (cpf.isdigit() and len(cpf) == 11):
+        print("CPF inválido. Deve conter exatamente 11 dígitos numéricos.")
+        cpf = input("Entre com o CPF (apenas números): ")
+    # Validação da data de nascimento
+    while True:
+        data_str = input("Entre com a data de nascimento (DD/MM/AAAA): ")
+        try:
+            data_nascimento = datetime.datetime.strptime(data_str, "%d/%m/%Y").strftime("%Y-%m-%d")
+            break
+        except ValueError:
+            print("Formato de data inválido. Por favor, use DD/MM/AAAA.")
+    # Verificar se já existe CPF cadastrado
+    check_query = 'SELECT id FROM pessoa WHERE cpf = %s'
+    result = read_data(check_query, (cpf,))
 
     if result:
-        print("Pessoa já cadastrada no sistema com esse CPF. ID:", result[0][0])
-        return result[0][0]
-    # If it does not exist, insert the person
-    command = f'''
-        INSERT INTO pessoa (nome, email, cpf, data_nascimento)
-        VALUES ("{nome}", "{email}", "{cpf}", "{data_nascimento}")
-    '''
-    execute_command(command)
-    ## Retrieve the new person's ID
-    pessoa_id = read_data(f'SELECT id FROM pessoa WHERE nome = "{nome}"')[0][0]
-    print("Pessoa inserted successfully.", pessoa_id)
+        print("Pessoa já cadastrada no sistema com esse CPF.")
+        return
+    # Inserção da pessoa no banco incluindo observações
+    command = '''INSERT INTO pessoa (nome, email, cpf, data_nascimento, observacoes) VALUES (%s, %s, %s, %s, %s)'''
+    parametros = (nome, email, cpf, data_nascimento, observacoes)
+    resultado = execute_command(command, parametros)
+
+    if not resultado:
+        print("Erro ao inserir a pessoa.")
+        return None
+    # Buscar o ID da nova pessoa cadastrada
+    pessoa_id = read_data('SELECT id FROM pessoa WHERE cpf = %s', (cpf,))[0][0]
+    print("Pessoa inserida com sucesso. ID:", pessoa_id)
     return pessoa_id
 
 ## UPDATE PESSOA
-def update_pessoa(pessoa_id):
-    # Fetch the person's current data from the database
-    query = f'''SELECT nome, email, cpf, data_nascimento FROM pessoa WHERE id = {pessoa_id}'''
-    result = read_data(query)
-    # Check if the person was found
+def update_pessoa():
+    # Busca pelo nome da pessoa que deseja atualizar
+    nome_busca = input("Digite o nome (ou parte do nome) da pessoa que deseja buscar: ").strip()
+    if not nome_busca:
+        print("Nenhum nome informado. Operação cancelada.")
+        return
+    
+    query = 'SELECT id, nome, email, cpf FROM pessoa WHERE nome LIKE %s'
+    parametro = ('%' + nome_busca + '%',)
+    resultados = read_data(query, parametro)
+
+    if not resultados:
+        print("Nenhuma pessoa encontrada com esse nome.")
+        return
+
+    print("\nPessoas encontradas:")
+    print(f"{'ID':<5} {'Nome':<30} {'Email':<30} {'CPF':<15}")
+    print("-" * 80)
+    for r in resultados:
+        print(f"{r[0]:<5} {r[1]:<30} {r[2]:<30} {r[3]:<15}")
+    
+    while True:
+        escolha = input("Digite o ID da pessoa para selecionar, ou Enter para cancelar: ").strip()
+        if escolha == '':
+            print("Operação cancelada pelo usuário.")
+            return
+        try:
+            pessoa_id = int(escolha)
+            ids_validos = [r[0] for r in resultados]
+            if pessoa_id in ids_validos:
+                break
+            else:
+                print("ID inválido. Escolha um ID da lista exibida.")
+        except ValueError:
+            print("Por favor, digite um número válido para o ID.")
+    # Buscar os dados atuais da pessoa selecionada, incluindo observações
+    query = 'SELECT nome, email, cpf, data_nascimento, observacoes FROM pessoa WHERE id = %s'
+    result = read_data(query, (pessoa_id,))
     if not result:
         print(f"Nenhuma pessoa encontrada com o ID {pessoa_id}.")
         return
-    # Unpack existing data
-    nome_atual, email_atual, cpf_atual, data_nasc_atual = result[0]
 
-    # Show current data to user
+    nome_atual, email_atual, cpf_atual, data_nasc_atual, observacoes_atual = result[0]
+
     print("\n--- Dados atuais da pessoa ---")
     print(f"Nome: {nome_atual}")
     print(f"Email: {email_atual}")
     print(f"CPF: {cpf_atual}")
     print(f"Data de Nascimento: {data_nasc_atual}")
+    print(f"Observações: {observacoes_atual}")
     print("----------------------------------")
-    # Request new data (or keep current data if user presses Enter)
+
     nome = input(f"Digite o novo nome (ou Enter para manter '{nome_atual}'): ") or nome_atual
     email = input(f"Digite o novo email (ou Enter para manter '{email_atual}'): ") or email_atual
-    
-    try:
+    # Validação do CPF
+    while True:
         cpf_input = input(f"Digite o novo CPF (ou Enter para manter '{cpf_atual}'): ")
-        cpf = int(cpf_input) if cpf_input else cpf_atual
-    except ValueError:
-        print("CPF inválido. Atualização cancelada.")
-        return
+        if not cpf_input:
+            cpf = cpf_atual
+            break
+        if not cpf_input.isdigit() or len(cpf_input) != 11:
+            print("CPF inválido. Deve conter exatamente 11 dígitos numéricos. Tente novamente.")
+        else:
+            cpf = cpf_input
+            break
+    # Validação da data de nascimento
+    while True:
+        data_input = input(f"Digite a nova data de nascimento (ou Enter para manter '{data_nasc_atual}'): ")
+        if not data_input:
+            data_nasc = data_nasc_atual
+            break
+        if len(data_input) != 10 or data_input[2] != '/' or data_input[5] != '/':
+            print("Formato inválido. Use DD/MM/AAAA com barras '/'. Tente novamente.")
+            continue
+        try:
+            data_nasc = datetime.datetime.strptime(data_input, "%d/%m/%Y").strftime("%Y-%m-%d")
+            break
+        except ValueError:
+            print("Data inválida ou inexistente. Use formato DD/MM/AAAA. Tente novamente.")
+    # Observações
+    observacoes = input(f"Digite as novas observações (ou Enter para manter '{observacoes_atual}'): ") or observacoes_atual
 
-    data_nasc = input(f"Digite a nova data de nascimento (ou Enter para manter '{data_nasc_atual}'): ") or data_nasc_atual
-    # Assemble the update SQL command
-    command = f'''
-        UPDATE pessoa 
-        SET nome = "{nome}", email = "{email}", cpf = {cpf}, data_nascimento = "{data_nasc}"
-        WHERE id = {pessoa_id}
-    '''
-    execute_command(command)
+    # Comando SQL de atualização incluindo observações
+    command = '''UPDATE pessoa SET nome = %s, email = %s, cpf = %s, data_nascimento = %s, observacoes = %s WHERE id = %s'''
+    parametro = (nome, email, cpf, data_nasc, observacoes, pessoa_id)
+    resultado = execute_command(command, parametro)
 
-    print("Pessoa atualizada com sucesso!")
+    if resultado:
+        print("Pessoa atualizada com sucesso!")
+    else:
+        print("Erro: não foi possível atualizar a pessoa.")
 
 ## DELETE PESSOA
 def delete_pessoa():
+    # Solicita o nome da pessoa que deseja deletar
     nome_pessoa = input("Digite o nome da pessoa que deseja deletar: ").strip()
-    # Search for people with similar name
-    query = f'''SELECT id, nome, cpf FROM pessoa WHERE nome LIKE "%{nome_pessoa}%"'''
-    result = read_data(query)
+    if not nome_pessoa:
+        print("Nenhum nome informado. Operação cancelada.")
+        return
+    # Busca pessoas pelo nome (uso seguro de parâmetros)
+    query = 'SELECT id, nome, cpf, observacoes FROM pessoa WHERE nome LIKE %s'
+    parametro = ('%' + nome_pessoa + '%',)
+    result = read_data(query, parametro)
 
     if not result:
         print(f"Nenhuma pessoa encontrada com nome parecido com '{nome_pessoa}'.")
         return
-    # If more than one person found, ask to choose
+
+    # Caso encontre mais de uma pessoa
     if len(result) > 1:
         print("\nPessoas encontradas:")
-        for idx, (pid, nome, cpf) in enumerate(result, 1):
-            print(f"{idx}. ID: {pid}, Nome: {nome}, CPF: {cpf}")
+        # Exibe o número do item (idx), ID, nome, CPF e observações, percorre a lista de resultados da consulta SQL, enumerando a partir de 1
+        for idx, (pid, nome, cpf, observacoes) in enumerate(result, 1):
+            print(f"{idx}. ID: {pid}, Nome: {nome}, CPF: {cpf}, Observações: {observacoes}")
         try:
+            
             escolha = int(input("Digite o número da pessoa que deseja deletar: "))
+            # Pega o ID e nome da pessoa escolhida
             pessoa_id = result[escolha - 1][0]
+            # Pega o nome da pessoa escolhida
             nome_escolhido = result[escolha - 1][1]
         except (ValueError, IndexError):
             print("Opção inválida!")
@@ -102,19 +179,18 @@ def delete_pessoa():
     else:
         pessoa_id = result[0][0]
         nome_escolhido = result[0][1]
-    # Confirmation before deleting
+    # Confirmação antes de deletar
     confirmar = input(f"Tem certeza que deseja deletar a pessoa '{nome_escolhido}' (ID: {pessoa_id})? (s/n): ").lower()
     if confirmar != 's':
         print("Operação cancelada.")
         return
-    # Deletion
+    # Executa o comando de deleção
     try:
-        delete_command = f'DELETE FROM pessoa WHERE id = {pessoa_id}'
-        execute_command(delete_command)
+        delete_command = 'DELETE FROM pessoa WHERE id = %s'
+        execute_command(delete_command, (pessoa_id,))
         print(f"Pessoa '{nome_escolhido}' (ID: {pessoa_id}) deletada com sucesso!")
     except Exception as e:
         print("Erro ao deletar a pessoa:", e)
-
 
 ## Create // Update // Delete (Funcionario)
 
@@ -501,4 +577,5 @@ def delete_fornecedor():
 
 if __name__ == '__main__':
     generate_data()
+    delete_pessoa()
     close_connection()
