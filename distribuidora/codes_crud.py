@@ -2,6 +2,9 @@ from mysql_codes import *
 from datetime import datetime
 
 class Pessoa:
+    def __str__(self):
+        return self.nome
+
     def __init__(self, id=None, nome=None, email=None, cpf=None, data_nascimento=None):
         self.id = id
         self.nome = nome
@@ -41,6 +44,9 @@ class Pessoa:
 
 
 class Cargo:
+    def __str__(self):
+        return self.nome
+
     def __init__(self, id=None, nome=None, salario_categoria=None, descricao=None, nivel_hierarquia=None):
         self.id = id
         self.nome = nome
@@ -80,6 +86,9 @@ class Cargo:
 
 
 class Fornecedor:
+    def __str__(self):
+        return self.nome_fantasia if self.nome_fantasia else self.cnpj
+
     def __init__(self, id=None, cnpj=None, nome_fantasia=None, email_contato=None):
         self.id = id
         self.cnpj = cnpj
@@ -118,6 +127,9 @@ class Fornecedor:
 
 
 class Telefone:
+    def __str__(self):
+        return self.numero
+
     def __init__(self, id=None, tipo=None, ddd=None, numero=None, pessoa_id=None):
         self.id = id
         self.tipo = tipo
@@ -157,6 +169,15 @@ class Telefone:
 
 
 class Funcionario:
+    def __str__(self):
+        pessoa = Pessoa()
+        if self.pessoa_id:
+            pessoa.carregar(self.pessoa_id)
+            nome = pessoa.nome
+        else:
+            nome = "Desconhecido"
+        return nome
+
     def __init__(self, id=None, data_admissao=None, matricula=None, data_demissao=None, pessoa_id=None, cargo_id=None):
         self.id = id
         self.data_admissao = data_admissao
