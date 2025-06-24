@@ -9,11 +9,9 @@ def menu():
     print("3. Read Data")
     print("4. Exit")
 
-
-
 if __name__ == '__main__':
     generate_data()
-
+    
     # pessoa1 = Pessoa() # cria um objeto Pessoa
     # #exibindo a pessoa de id 1
     # pessoa1.carregar(1) #chama o metodo carregar para carregar os dados da pessoa com ID 1
@@ -37,5 +35,5 @@ if __name__ == '__main__':
     #
     # # # Deletando a pessoa de id 1
     # pessoa1.deletar() # chama o metodo deletar para deletar os dados da pessoa com ID 1
-
+    
     close_connection()
