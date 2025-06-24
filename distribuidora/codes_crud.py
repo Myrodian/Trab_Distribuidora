@@ -1,4 +1,5 @@
 from mysql_codes import *
+from datetime import datetime
 
 class Pessoa:
     def __init__(self, id=None, nome=None, email=None, cpf=None, data_nascimento=None):
@@ -156,17 +157,18 @@ class Telefone:
 
 
 class Funcionario:
-    def __init__(self, id=None, data_admissao=None, matricula=None, pessoa_id=None, cargo_id=None):
+    def __init__(self, id=None, data_admissao=None, matricula=None, data_demissao=None, pessoa_id=None, cargo_id=None):
         self.id = id
         self.data_admissao = data_admissao
         self.matricula = matricula
+        self.data_demissao = data_demissao
         self.pessoa_id = pessoa_id
         self.cargo_id = cargo_id
 
     def carregar(self, id):
-        result = read_data("SELECT id, data_admissao, matricula, Pessoa_id, Cargo_id FROM funcionario WHERE id = %s", (id,))
+        result = read_data("SELECT id, data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id FROM funcionario WHERE id = %s", (id,))
         if result:
-            self.id, self.data_admissao, self.matricula, self.pessoa_id, self.cargo_id = result[0]
+            self.id, self.data_admissao, self.matricula, self.data_demissao, self.pessoa_id, self.cargo_id = result[0]
             print(f"Funcionário ID {self.id} carregado com sucesso!")
             return True
         else:
@@ -175,12 +177,12 @@ class Funcionario:
 
     def salvar(self):
         if self.id:
-            query = """UPDATE funcionario SET data_admissao=%s, matricula=%s WHERE id=%s"""
-            execute_command(query, (self.data_admissao, self.matricula, self.id))
+            query = """UPDATE funcionario SET data_admissao=%s, matricula=%s, data_demissao=%s WHERE id=%s"""
+            execute_command(query, (self.data_admissao, self.matricula, self.data_demissao, self.id))
             print("Funcionário atualizado com sucesso!")
         else:
-            query = """INSERT INTO funcionario (data_admissao, matricula, Pessoa_id, Cargo_id) VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.data_admissao, self.matricula, self.pessoa_id, self.cargo_id))
+            query = """INSERT INTO funcionario (data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id) VALUES (%s, %s, %s, %s)"""
+            execute_command(query, (self.data_admissao, self.matricula, self.data_demissao, self.pessoa_id, self.cargo_id))
             result = read_data("SELECT LAST_INSERT_ID()")
             self.id = result[0][0]
             print(f"Funcionário inserido com sucesso! Novo ID: {self.id}")
@@ -189,6 +191,6 @@ class Funcionario:
         if not self.id:
             print("Funcionário não carregado. Não é possível deletar.")
             return
-        execute_command("DELETE FROM funcionario WHERE id = %s", (self.id,))
-        print("Funcionário deletado com sucesso!")
-        self.id = None
+        self.data_demissao = datetime.now().strftime('%Y-%m-%d')
+        execute_command("UPDATE funcionario SET data_demissao = %s WHERE id = %s", (self.data_demissao, self.id))
+        print(f"Funcionário marcado como desligado em {self.data_demissao}.")
