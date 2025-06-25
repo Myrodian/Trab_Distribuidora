@@ -1,6 +1,7 @@
 from fake_data import *
 from codes_crud import *
 
+
 def cadastrarpessoa():
     # cadastrar pessoa CREATE
     pessoa = Pessoa()  # cria um objeto Pessoa
@@ -12,11 +13,10 @@ def cadastrarpessoa():
     print(pessoa)
     print (f"Nome:{pessoa.nome}\nEmail:{pessoa.email}\nCPF:{pessoa.cpf}\nData de Nascimento:{pessoa.data_nascimento}")
 
-
 if __name__ == '__main__':
     generate_data()
-    # cadastrarpessoa()
-    # pessoa = Pessoa() # cria um objeto Pessoa
+    
+    # pessoa1 = Pessoa() # cria um objeto Pesso
     # #exibindo a pessoa de id 1
     # pessoa.carregar(1) #chama o metodo carregar para carregar os dados da pessoa com ID 1
     # print(pessoa.nome)
@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
     pessoa = Pessoa() # cria um objeto Pessoa
     #
+    
     # pessoa.nome = "nasser"
     # pessoa.email = "nasser@gmail.com"
     # pessoa.cpf = "12328910371"
@@ -62,5 +63,9 @@ if __name__ == '__main__':
 
     # fornecedor.email_contato = "emailnovodofornecedor4@gmail.com"
     # fornecedor.salvar()
+
+    # # # Deletando a pessoa de id 1
+    # pessoa1.deletar() # chama o metodo deletar para deletar os dados da pessoa com ID 1
+    
 
     close_connection()
