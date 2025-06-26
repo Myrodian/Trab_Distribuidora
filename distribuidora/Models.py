@@ -397,6 +397,8 @@ class Produto:
 
         return produtos  # ainda retorna a lista, caso queira usar depois
 
+#TODO Class EntregaProduto. Não pode ser metodo de assossiação, tem que ser uma class mesmo, ajustar isso
+
 class Entrega:
     def __str__(self):
         return f"Entrega ID: {self.id}, Status: {self.status}"
