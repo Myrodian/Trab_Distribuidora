@@ -31,16 +31,4 @@ def menu():
 if __name__ == '__main__':
     generate_data()
     menu()
-    # Criar dados no formato de tabela
-    # dados = [
-    #     [p.id, p.nome, p.email, p.cpf,
-    #      p.data_nascimento.strftime("%Y-%m-%d") if hasattr(p.data_nascimento, "strftime") else p.data_nascimento]
-    #     for p in todas
-    # ]
-    #
-    # # Cabeçalhos da tabela
-    # cabecalhos = ["ID", "Nome", "Email", "CPF", "Data de Nascimento"]
-    #
-    # print(tabulate(dados, headers=cabecalhos, tablefmt="grid"))
-
     close_connection()
