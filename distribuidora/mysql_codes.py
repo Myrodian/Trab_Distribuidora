@@ -7,7 +7,8 @@ connection = mysql.connector.connect(
     password='root',
     database='distribuidora'
 )
-cursor = connection.cursor()
+
+cursor = connection.cursor(dictionary=True)
 
 # Fecha a conexão com o banco de dados
 def close_connection():
@@ -31,6 +32,7 @@ def execute_command(command, params=None):
 def read_data(command, params=None):
     try:
         if params:
+
             cursor.execute(command, params)
         else:
             cursor.execute(command)
