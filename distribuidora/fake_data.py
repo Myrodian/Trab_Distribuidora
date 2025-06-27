@@ -66,22 +66,22 @@ def generate_data():
         execute_command(command)
     if not read_data('SELECT id FROM funcionario'):
         command = (
-            'INSERT INTO funcionario (data_admissao, matricula, Pessoa_id, Cargo_id, observacoes) VALUES '
-            '("2020-01-15", "MAT001", 1, 1, NULL), '
-            '("2021-03-10", "MAT002", 2, 6, NULL), '
-            '("2019-11-20", "MAT003", 3, 3, NULL), '
-            '("2022-06-05", "MAT004", 4, 6, NULL), '
-            '("2021-08-17", "MAT005", 5, 5, NULL), '
-            '("2023-02-01", "MAT006", 6, 6, NULL), '
-            '("2018-07-12", "MAT007", 7, 7, NULL), '
-            '("2020-09-30", "MAT008", 8, 8, NULL), '
-            '("2021-12-11", "MAT009", 9, 9, NULL), '
-            '("2019-04-03", "MAT010", 10, 10, NULL), '
-            '("2020-05-27", "MAT011", 11, 4, NULL), '
-            '("2022-01-22", "MAT012", 12, 5, NULL), '
-            '("2023-04-14", "MAT013", 13, 6, NULL), '
-            '("2021-10-19", "MAT014", 14, 7, NULL), '
-            '("2020-12-01", "MAT015", 15, 8, NULL)'
+            'INSERT INTO funcionario (data_admissao, matricula, Pessoa_id, Cargo_id, observacoes, data_demissao) VALUES '
+            '("2020-01-15", "MAT001", 1, 1, NULL, NULL), '
+            '("2021-03-10", "MAT002", 2, 6, NULL, NULL), '
+            '("2019-11-20", "MAT003", 3, 3, NULL, NULL), '
+            '("2022-06-05", "MAT004", 4, 6, NULL, NULL), '
+            '("2021-08-17", "MAT005", 5, 5, NULL, NULL), '
+            '("2023-02-01", "MAT006", 6, 6, NULL, NULL), '
+            '("2018-07-12", "MAT007", 7, 7, NULL, NULL), '
+            '("2020-09-30", "MAT008", 8, 8, NULL, NULL), '
+            '("2021-12-11", "MAT009", 9, 9, NULL, NULL), '
+            '("2019-04-03", "MAT010", 10, 10, NULL, "2020-05-10"), '
+            '("2020-05-27", "MAT011", 11, 4, NULL, NULL), '
+            '("2022-01-22", "MAT012", 12, 5, NULL, NULL), '
+            '("2023-04-14", "MAT013", 13, 6, NULL, "2025-03-27"), '
+            '("2021-10-19", "MAT014", 14, 7, NULL, NULL), '
+            '("2020-12-01", "MAT015", 15, 8, NULL, NULL)'
         )
         execute_command(command)
     if not read_data('SELECT id FROM fornecedor'):
@@ -321,6 +321,9 @@ def generate_data():
             '(39, 9), '
             '(40, 9), '
             '(26, 9)'
+            '(27, 10)'
+            '(28, 10)'
+
         )
         execute_command(command)
 

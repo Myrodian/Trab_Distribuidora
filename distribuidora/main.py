@@ -144,16 +144,116 @@ def menu_produtos():
         print("Opção inválida.")
         return menu_produtos()
 
+def menu_juncoes():
+    print("<========================================> Menu Junções <========================================>")
+    print("0 - Voltar")
+    print("1 - Exibir produtos com os seus estoques")
+    print("2 - Exibir todos os produtos com seus fornecedores")
+    print("3 - Exibir todos os funcionarios com seus nomes e cargos")
+    print("4 - exibir todos os clientes")
+    opcao = input("Digite uma opção: ")
+    if opcao == "0":
+        return menu_trabalho()
+    elif opcao == "1":
+        Produto.listar_todos()
+        print("Exibindo todos os produtos com seus estoques.")
+        return menu_juncoes()
+
+    elif opcao == "2":
+        Produto.listar_todos_com_fornecedores()
+        print("Exibindo todos os produtos com seus fornecedores.")
+        return menu_juncoes()
+
+    elif opcao == "3":
+        Funcionario.listar_todos()
+        print("Exibindo todos os funcionários com seus nomes e cargos.")
+        return menu_juncoes()
+
+    elif opcao == "4":
+        Cliente.listar_todos()
+        print("Essa consulta está retornando todos os clientes. Para exibir foi usado função de junção e função aninhada.")
+        print("para que serve? Exibir todos os clientes com seus endereços")
+        return menu_juncoes()
+
+    else:
+        print("Opção inválida.")
+        return menu_juncoes()
+
+
+def menu_group_by_having():
+    print("<========================================> Menu Group By e Having <========================================>")
+    print("0 - Voltar")
+    print("1 - Exibir produtos com os seus estoques")
+    print("2 - Exibir todos os produtos com seus fornecedores")
+    print("3 - Exibir todos os funcionarios com seus nomes e cargos")
+    print("4 - exibir todas as entregas para um determinado cliente")
+    opcao = input("Digite uma opção: ")
+    if opcao == "0":
+        return menu_trabalho()
+
+def menu_funcoes_datas():
+    print("<========================================> Menu Funções de Datas <========================================>")
+    print("0 - Voltar")
+    print("1 - Exibir produtos com os seus estoques")
+    print("2 - Exibir todos os produtos com seus fornecedores")
+    print("3 - Exibir todos os funcionarios com seus nomes e cargos")
+    print("4 - exibir todas as entregas para um determinado cliente")
+    opcao = input("Digite uma opção: ")
+    if opcao == "0":
+        return menu_trabalho()
+
+def menu_consultas_aninhadas():
+    print("<========================================> Menu Consultas Aninhadas <========================================>")
+    print("0 - Voltar")
+    print("1 - Exibir produtos com os seus estoques")
+    print("2 - Exibir todos os produtos com seus fornecedores")
+    print("3 - Exibir todos os funcionarios com seus nomes e cargos")
+    print("4 - exibir todas as entregas para um determinado cliente")
+    opcao = input("Digite uma opção: ")
+    if opcao == "0":
+        return menu_trabalho()
+
+def menu_trabalho():
+    print("<========================================> Menu Trabalho <========================================>")
+    print("0 - Voltar ao menu principal")
+    print("1 - consultas com junção")
+    print("2 - consultas com group by e funções agregadas e/ou having")
+    print("3 - consultas com funções de datas")
+    print("4 - consultas aninhadas")
+
+    opcao = input("Digite uma opção: ")
+
+    if opcao == "0":
+        return menu()
+
+    elif opcao == "1":
+        menu_juncoes()
+
+    elif opcao == "2":
+        menu_group_by_having()
+
+    elif opcao == "3":
+        menu_funcoes_datas()
+
+    elif opcao == "4":
+        menu_consultas_aninhadas()
+
+    else:
+        print("Opção inválida.")
+        return menu_trabalho()
+
 def menu():
     print("0 - Sair")
     print("1 - Ir para o menu de produtos")
     print("2 - Ir para o menu de fornecedores")
-
+    print("9 - Pesquisas Importantes para o trabalho")
     op = input("Digite uma opção: ")
     if op == "0":
         return
     elif op == "1":
         menu_produtos()
+    elif op == "9":
+        menu_trabalho()
     else:
         print("Opção inválida, tente novamente.")
         menu()
