@@ -136,7 +136,9 @@ def menu_produtos():
     elif opcao == "3":
         return deletar_produto()
 
-    #TODO elif opcao == "4": alterar estoque de tal produto
+    #TODO elif opcao == "4": alterar estoque de tal produto (hardcoded)
+    #TODO fazer a opção de alterar o estoque de um produto específico
+    #TODO fazer movimentação de estoque, ou seja, adicionar ou remover quantidade de um produto específico (softcoded)
 
     else:
         print("Opção inválida.")
