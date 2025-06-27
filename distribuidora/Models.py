@@ -125,8 +125,6 @@ class Cargo:
         print("Cargo deletado com sucesso!")
         self.id = None
 
-from tabulate import tabulate
-
 class Fornecedor:
     def __str__(self):
         return self.nome_fantasia if self.nome_fantasia else self.cnpj
@@ -230,7 +228,6 @@ class Fornecedor:
 
         return fornecedores
 
-
 class Telefone:
     def __str__(self):
         return self.numero
@@ -319,6 +316,47 @@ class Funcionario:
         self.data_demissao = datetime.now().strftime('%Y-%m-%d')
         execute_command("UPDATE funcionario SET data_demissao = %s WHERE id = %s", (self.data_demissao, self.id))
         print(f"Funcionário marcado como desligado em {self.data_demissao}.")
+
+    @staticmethod
+    def listar_todos(imprimir=True):
+        result = read_data("""
+            SELECT f.id, f.data_admissao, f.matricula, f.data_demissao,
+                   f.Pessoa_id, f.Cargo_id,
+                   p.nome AS nome_pessoa,
+                   c.nome AS nome_cargo
+            FROM funcionario f
+            INNER JOIN pessoa p ON f.Pessoa_id = p.id
+            INNER JOIN cargo c ON f.Cargo_id = c.id
+            WHERE f.data_demissao IS NULL
+            ORDER BY f.id
+        """)
+
+        funcionarios = []
+        dados_tabela = []
+        for row in result:
+            funcionario = Funcionario(
+                id=row[0],
+                data_admissao=row[1],
+                matricula=row[2],
+                data_demissao=row[3],
+                pessoa_id=row[4],
+                cargo_id=row[5]
+            )
+            funcionarios.append(funcionario)
+            dados_tabela.append([
+                row[0],  # id
+                row[6],  # nome da pessoa
+                row[2],  # matrícula
+                row[1],  # data de admissão
+                row[7],  # nome do cargo
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Nome", "Matrícula", "Admissão", "Cargo"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return funcionarios
+
 
 class Produto:
     def __str__(self):
@@ -445,6 +483,45 @@ class Produto:
             print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
 
         return produtos  # ainda retorna a lista, caso queira usar depois
+
+    @staticmethod
+    def listar_todos_com_fornecedores(imprimir=True):
+        result = read_data("""
+            SELECT p.id, p.nome, p.preco_unitario, p.observacoes, 
+                   e.quantidade_atual,
+                   f.nome_fantasia, f.cnpj
+            FROM produto p
+            LEFT JOIN estoque e ON p.id = e.Produto_id
+            INNER JOIN fornecedor f ON p.Fornecedor_id = f.id
+            ORDER BY p.id
+        """)
+        produtos = []
+        dados_tabela = []
+        for row in result:
+            produto = Produto(
+                id=row[0],
+                nome=row[1],
+                preco_unitario=row[2],
+                observacoes=row[3],
+                fornecedor_id=None,  # opcional aqui
+                quantidade_estoque=row[4]
+            )
+            produtos.append(produto)
+            dados_tabela.append([
+                row[0],  # id
+                row[1],  # nome
+                f"R$ {row[2]:.2f}" if row[2] is not None else "",
+                row[4] if row[4] is not None else 0,  # estoque
+                row[5],  # nome_fantasia
+                row[6],  # cnpj
+                row[3] or ""  # observações
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Nome", "Preço Unit.", "Estoque", "Fornecedor", "CNPJ", "Observações"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return
 
 class EntregaProduto:
     def __init__(self, entrega_id=None, produto_id=None, quantidade=None, preco_unitario=None):
@@ -613,6 +690,67 @@ class Cliente:
 
         pessoas = [Pessoa(*row) for row in result]
         return pessoas
+
+    @staticmethod
+    def listar_todos(imprimir=True):
+        query = """
+            SELECT 
+                c.id,
+                c.nome_fantasia,
+                c.cnpj,
+                c.numero_endereco,
+                r.Nome AS rua,
+                ci.Nome AS cidade,
+                es.Nome AS estado,
+                p.nome AS nome_pessoa,
+                p.cpf AS cpf_pessoa
+            FROM cliente c
+            JOIN rua r ON c.Rua_id = r.id
+            JOIN cidade ci ON r.Cidade_id = ci.id
+            JOIN estado es ON ci.Estado_id = es.id
+            LEFT JOIN (
+                SELECT phc.Cliente_id, p.nome, p.cpf
+                FROM pessoa_has_cliente phc
+                JOIN pessoa p ON phc.Pessoa_id = p.id
+                WHERE phc.Pessoa_id = (
+                    SELECT MIN(phc2.Pessoa_id)
+                    FROM pessoa_has_cliente phc2
+                    WHERE phc2.Cliente_id = phc.Cliente_id
+                )
+            ) AS p ON p.Cliente_id = c.id
+            ORDER BY c.id
+        """
+        result = read_data(query)
+
+        clientes = []
+        dados_tabela = []
+
+        for row in result:
+            cliente = Cliente(
+                id=row[0],
+                nome_fantasia=row[1],
+                cnpj=row[2],
+                numero_endereco=row[3],
+                rua_id=None
+            )
+            clientes.append(cliente)
+
+            nome_exibido = row[1] if row[2] else (row[7] or "Desconhecido")
+            documento = row[2] if row[2] else (row[8] or "Não informado")
+            endereco = f"{row[6]} / {row[5]} / {row[4]}, {row[3]}"
+
+            dados_tabela.append([
+                cliente.id,
+                nome_exibido,
+                documento,
+                endereco
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Nome/Razão Social", "CPF/CNPJ", "Endereço"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return clientes
 
 class Estado:
     def __init__(self, id=None, nome=None):
