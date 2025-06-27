@@ -125,6 +125,8 @@ class Cargo:
         print("Cargo deletado com sucesso!")
         self.id = None
 
+from tabulate import tabulate
+
 class Fornecedor:
     def __str__(self):
         return self.nome_fantasia if self.nome_fantasia else self.cnpj
@@ -165,7 +167,7 @@ class Fornecedor:
         print("Fornecedor deletado com sucesso!")
         self.id = None
 
-    def listar_pessoas(self):
+    def listar_pessoas(self, imprimir=True):
         if not self.id:
             print("Fornecedor não carregado.")
             return []
@@ -177,8 +179,57 @@ class Fornecedor:
             WHERE pf.Fornecedor_id = %s
         """, (self.id,))
 
-        pessoas = [Pessoa(*row) for row in result]
+        pessoas = []
+        dados_tabela = []
+        for row in result:
+            pessoa = Pessoa(*row)
+            pessoas.append(pessoa)
+
+            dados_tabela.append([
+                pessoa.id,
+                pessoa.nome,
+                pessoa.email,
+                pessoa.cpf,
+                pessoa.data_nascimento
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Nome", "Email", "CPF", "Data Nasc."]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
         return pessoas
+
+    @staticmethod
+    def listar_todos(imprimir=True):
+        result = read_data("""
+            SELECT id, cnpj, nome_fantasia, email_contato
+            FROM fornecedor
+            ORDER BY id
+        """)
+        fornecedores = []
+        dados_tabela = []
+        for row in result:
+            fornecedor = Fornecedor(
+                id=row[0],
+                cnpj=row[1],
+                nome_fantasia=row[2],
+                email_contato=row[3]
+            )
+            fornecedores.append(fornecedor)
+
+            dados_tabela.append([
+                fornecedor.id,
+                fornecedor.nome_fantasia or "",
+                fornecedor.cnpj,
+                fornecedor.email_contato or ""
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Nome Fantasia", "CNPJ", "Email Contato"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return fornecedores
+
 
 class Telefone:
     def __str__(self):
@@ -273,13 +324,13 @@ class Produto:
     def __str__(self):
         return self.nome
 
-    def __init__(self, id=None, nome=None, preco_unitario=None, observacoes=None, fornecedor_id=None):
+    def __init__(self, id=None, nome=None, preco_unitario=None, observacoes=None, fornecedor_id=None, quantidade_estoque=None):
         self.id = id
         self.nome = nome
         self.preco_unitario = preco_unitario
         self.observacoes = observacoes
         self.fornecedor_id = fornecedor_id
-        self.quantidade_estoque = None  # novo atributo interno
+        self.quantidade_estoque = quantidade_estoque
 
     def carregar(self, id):
         result = read_data("""
@@ -298,7 +349,7 @@ class Produto:
             print("Produto não encontrado.")
             return False
 
-    def salvar(self):
+    def salvar(self, estoque_inicial=None):
         if self.id:
             query = """UPDATE produto SET nome=%s, preco_unitario=%s, observacoes=%s, Fornecedor_id=%s WHERE id=%s"""
             execute_command(query, (self.nome, self.preco_unitario, self.observacoes, self.fornecedor_id, self.id))
@@ -309,7 +360,7 @@ class Produto:
             result = read_data("SELECT LAST_INSERT_ID()")
             self.id = result[0][0]
             print(f"Produto inserido com sucesso! Novo ID: {self.id}")
-            self._criar_estoque_inicial()  # cria estoque com 0 ao salvar novo produto
+            self._criar_estoque_inicial(estoque_inicial if estoque_inicial is not None else (self.quantidade_estoque or 0))
 
     def deletar(self):
         if not self.id:
@@ -328,7 +379,6 @@ class Produto:
         query = "INSERT INTO estoque (Produto_id, quantidade_atual) VALUES (%s, %s)"
         execute_command(query, (self.id, quantidade))
         self.quantidade_estoque = quantidade
-        print("Estoque inicial criado.")
 
     def carregar_estoque(self):
         result = read_data("SELECT quantidade_atual FROM estoque WHERE Produto_id = %s", (self.id,))
@@ -373,15 +423,14 @@ class Produto:
         dados_tabela = []
         for row in result:
             produto = Produto(
-                id=row['id'],
-                nome=row['nome'],
-                preco_unitario=row['preco_unitario'],
-                observacoes=row['observacoes'],
-                fornecedor_id=row['Fornecedor_id']
+                id=row[0],
+                nome=row[1],
+                preco_unitario=row[2],
+                observacoes=row[3],
+                fornecedor_id=row[4],
+                quantidade_estoque=row[5]
             )
-            produto.quantidade_estoque = row['quantidade_atual']
             produtos.append(produto)
-
             # Linha para a tabela
             dados_tabela.append([
                 produto.id,
@@ -397,7 +446,53 @@ class Produto:
 
         return produtos  # ainda retorna a lista, caso queira usar depois
 
-#TODO Class EntregaProduto. Não pode ser metodo de assossiação, tem que ser uma class mesmo, ajustar isso
+class EntregaProduto:
+    def __init__(self, entrega_id=None, produto_id=None, quantidade=None, preco_unitario=None):
+        self.entrega_id = entrega_id
+        self.produto_id = produto_id
+        self.quantidade = quantidade
+        self.preco_unitario = preco_unitario
+
+    def carregar(self, entrega_id, produto_id):
+        result = read_data("""
+            SELECT quantidade, preco_unitario
+            FROM EntregaProduto
+            WHERE Entrega_id = %s AND Produto_id = %s
+        """, (entrega_id, produto_id))
+        if result:
+            self.entrega_id = entrega_id
+            self.produto_id = produto_id
+            self.quantidade, self.preco_unitario = result[0]
+            print("EntregaProduto carregado com sucesso!")
+            return True
+        print("Relação EntregaProduto não encontrada.")
+        return False
+
+    def salvar(self):
+        existente = read_data("""
+            SELECT 1 FROM EntregaProduto WHERE Entrega_id = %s AND Produto_id = %s
+        """, (self.entrega_id, self.produto_id))
+
+        if existente:
+            execute_command("""
+                UPDATE EntregaProduto
+                SET quantidade = %s, preco_unitario = %s
+                WHERE Entrega_id = %s AND Produto_id = %s
+            """, (self.quantidade, self.preco_unitario, self.entrega_id, self.produto_id))
+            print("EntregaProduto atualizado com sucesso!")
+        else:
+            execute_command("""
+                INSERT INTO EntregaProduto (Entrega_id, Produto_id, quantidade, preco_unitario)
+                VALUES (%s, %s, %s, %s)
+            """, (self.entrega_id, self.produto_id, self.quantidade, self.preco_unitario))
+            print("EntregaProduto inserido com sucesso!")
+
+    def deletar(self):
+        execute_command("""
+            DELETE FROM EntregaProduto
+            WHERE Entrega_id = %s AND Produto_id = %s
+        """, (self.entrega_id, self.produto_id))
+        print("EntregaProduto deletado com sucesso!")
 
 class Entrega:
     def __str__(self):
@@ -453,37 +548,6 @@ class Entrega:
         execute_command("DELETE FROM entrega WHERE id = %s", (self.id,))
         print("Entrega deletada com sucesso!")
         self.id = None
-
-    def adicionar_produto(self, produto, quantidade, preco_unitario):
-        if not self.id or not produto.id:
-            print("IDs inválidos para entrega ou produto.")
-            return
-
-        existe = read_data(
-            "SELECT 1 FROM EntregaProduto WHERE Entrega_id = %s AND Produto_id = %s",
-            (self.id, produto.id)
-        )
-        if existe:
-            query = """UPDATE EntregaProduto
-                       SET quantidade = %s, preco_unitario = %s
-                       WHERE Entrega_id = %s AND Produto_id = %s"""
-            execute_command(query, (quantidade, preco_unitario, self.id, produto.id))
-            print("Produto atualizado na entrega.")
-        else:
-            query = """INSERT INTO EntregaProduto (Entrega_id, Produto_id, quantidade, preco_unitario)
-                       VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.id, produto.id, quantidade, preco_unitario))
-            print("Produto adicionado à entrega.")
-
-    def remover_produto(self, produto):
-        if not self.id or not produto.id:
-            print("IDs inválidos.")
-            return
-        execute_command(
-            "DELETE FROM EntregaProduto WHERE Entrega_id = %s AND Produto_id = %s",
-            (self.id, produto.id)
-        )
-        print("Produto removido da entrega.")
 
     def listar_produtos(self):
         result = read_data("""
@@ -550,73 +614,89 @@ class Cliente:
         pessoas = [Pessoa(*row) for row in result]
         return pessoas
 
-class Endereco:
-    def __init__(self, rua_id=None, numero=None):
-        self.numero = numero
-        self.rua_id = rua_id
+class Estado:
+    def __init__(self, id=None, nome=None):
+        self.id = id
+        self.nome = nome
 
-        # dados derivados via JOINs
-        self.rua_nome = None
-        self.cep = None
-        self.cidade_id = None
-        self.cidade_nome = None
-        self.estado_id = None
-        self.estado_nome = None
-
-    def carregar(self):
-        result = read_data("""
-            SELECT 
-                r.Nome AS rua_nome, r.cep, c.id AS cidade_id, c.Nome AS cidade_nome,
-                e.id AS estado_id, e.Nome AS estado_nome
-            FROM rua r
-            JOIN cidade c ON r.Cidade_id = c.id
-            JOIN estado e ON c.Estado_id = e.id
-            WHERE r.id = %s
-        """, (self.rua_id,))
-
+    def carregar(self, id):
+        result = read_data("SELECT id, Nome FROM estado WHERE id = %s", (id,))
         if result:
-            (self.rua_nome, self.cep, self.cidade_id, self.cidade_nome,
-             self.estado_id, self.estado_nome) = result[0]
-            print(f"Endereço completo carregado: {self}")
+            self.id, self.nome = result[0]
+            print(f"Estado ID {self.id} carregado com sucesso!")
             return True
+        print("Estado não encontrado.")
+        return False
+
+    def salvar(self):
+        if self.id:
+            execute_command("UPDATE estado SET Nome = %s WHERE id = %s", (self.nome, self.id))
+            print("Estado atualizado com sucesso!")
         else:
-            print("Endereço não encontrado para a Rua informada.")
-            return False
+            execute_command("INSERT INTO estado (Nome) VALUES (%s)", (self.nome,))
+            self.id = read_data("SELECT LAST_INSERT_ID()")[0][0]
+            print(f"Estado inserido com sucesso! Novo ID: {self.id}")
 
-    def salvar_completo(self, estado_nome, cidade_nome, rua_nome, cep):
-        """
-        Cria estado, cidade e rua encadeadamente, se não existirem.
-        """
-        # Inserir ou encontrar Estado
-        estado = read_data("SELECT id FROM estado WHERE Nome = %s", (estado_nome,))
-        if estado:
-            self.estado_id = estado[0][0]
+    def deletar(self):
+        execute_command("DELETE FROM estado WHERE id = %s", (self.id,))
+        print("Estado deletado com sucesso!")
+        self.id = None
+
+class Cidade:
+    def __init__(self, id=None, nome=None, estado_id=None):
+        self.id = id
+        self.nome = nome
+        self.estado_id = estado_id
+
+    def carregar(self, id):
+        result = read_data("SELECT id, Nome, Estado_id FROM cidade WHERE id = %s", (id,))
+        if result:
+            self.id, self.nome, self.estado_id = result[0]
+            print(f"Cidade ID {self.id} carregada com sucesso!")
+            return True
+        print("Cidade não encontrada.")
+        return False
+
+    def salvar(self):
+        if self.id:
+            execute_command("UPDATE cidade SET Nome = %s, Estado_id = %s WHERE id = %s", (self.nome, self.estado_id, self.id))
+            print("Cidade atualizada com sucesso!")
         else:
-            execute_command("INSERT INTO estado (Nome) VALUES (%s)", (estado_nome,))
-            self.estado_id = read_data("SELECT LAST_INSERT_ID()")[0][0]
+            execute_command("INSERT INTO cidade (Nome, Estado_id) VALUES (%s, %s)", (self.nome, self.estado_id))
+            self.id = read_data("SELECT LAST_INSERT_ID()")[0][0]
+            print(f"Cidade inserida com sucesso! Novo ID: {self.id}")
 
-        # Inserir ou encontrar Cidade
-        cidade = read_data("SELECT id FROM cidade WHERE Nome = %s AND Estado_id = %s", (cidade_nome, self.estado_id))
-        if cidade:
-            self.cidade_id = cidade[0][0]
-        else:
-            execute_command("INSERT INTO cidade (Nome, Estado_id) VALUES (%s, %s)", (cidade_nome, self.estado_id))
-            self.cidade_id = read_data("SELECT LAST_INSERT_ID()")[0][0]
+    def deletar(self):
+        execute_command("DELETE FROM cidade WHERE id = %s", (self.id,))
+        print("Cidade deletada com sucesso!")
+        self.id = None
 
-        # Inserir Rua
-        execute_command("INSERT INTO rua (Nome, cep, Cidade_id) VALUES (%s, %s, %s)", (rua_nome, cep, self.cidade_id))
-        self.rua_id = read_data("SELECT LAST_INSERT_ID()")[0][0]
-
-        # Set nomes locais
-        self.estado_nome = estado_nome
-        self.cidade_nome = cidade_nome
-        self.rua_nome = rua_nome
+class Rua:
+    def __init__(self, id=None, nome=None, cep=None, cidade_id=None):
+        self.id = id
+        self.nome = nome
         self.cep = cep
+        self.cidade_id = cidade_id
 
-        print(f"Endereço completo salvo. Rua ID: {self.rua_id}")
+    def carregar(self, id):
+        result = read_data("SELECT id, Nome, cep, Cidade_id FROM rua WHERE id = %s", (id,))
+        if result:
+            self.id, self.nome, self.cep, self.cidade_id = result[0]
+            print(f"Rua ID {self.id} carregada com sucesso!")
+            return True
+        print("Rua não encontrada.")
+        return False
 
-    def __str__(self):
-        if self.rua_nome and self.cidade_nome and self.estado_nome:
-            return f"{self.rua_nome}, {self.numero} - {self.cidade_nome}/{self.estado_nome} - CEP {self.cep}"
+    def salvar(self):
+        if self.id:
+            execute_command("UPDATE rua SET Nome = %s, cep = %s, Cidade_id = %s WHERE id = %s", (self.nome, self.cep, self.cidade_id, self.id))
+            print("Rua atualizada com sucesso!")
         else:
-            return f"[Endereço incompleto: Rua ID {self.rua_id}, Número {self.numero}]"
+            execute_command("INSERT INTO rua (Nome, cep, Cidade_id) VALUES (%s, %s, %s)", (self.nome, self.cep, self.cidade_id))
+            self.id = read_data("SELECT LAST_INSERT_ID()")[0][0]
+            print(f"Rua inserida com sucesso! Novo ID: {self.id}")
+
+    def deletar(self):
+        execute_command("DELETE FROM rua WHERE id = %s", (self.id,))
+        print("Rua deletada com sucesso!")
+        self.id = None
