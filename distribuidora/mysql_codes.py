@@ -8,7 +8,7 @@ connection = mysql.connector.connect(
     database='distribuidora'
 )
 
-cursor = connection.cursor(dictionary=True)
+cursor = connection.cursor()
 
 # Fecha a conexão com o banco de dados
 def close_connection():
