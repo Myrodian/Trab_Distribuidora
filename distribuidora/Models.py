@@ -6,17 +6,18 @@ class Pessoa:
     def __str__(self):
         return self.nome
 
-    def __init__(self, id=None, nome=None, email=None, cpf=None, data_nascimento=None):
+    def __init__(self, id=None, nome=None, email=None, cpf=None, data_nascimento=None, observacoes=None):
         self.id = id
         self.nome = nome
         self.email = email
         self.cpf = cpf
         self.data_nascimento = data_nascimento
+        self.observacoes = observacoes
 
     def carregar(self, id):
-        result = read_data("SELECT id, nome, email, cpf, data_nascimento FROM pessoa WHERE id = %s", (id,))
+        result = read_data("SELECT id, nome, email, cpf, data_nascimento, observacoes FROM pessoa WHERE id = %s", (id,))
         if result:
-            self.id, self.nome, self.email, self.cpf, self.data_nascimento = result[0]
+            self.id, self.nome, self.email, self.cpf, self.data_nascimento, self.observacoes = result[0]
             print(f"Pessoa ID {self.id} carregada!")
             return True
         else:
@@ -24,16 +25,19 @@ class Pessoa:
             return False
 
     def salvar(self):
-        if self.id:
-            query = """UPDATE pessoa SET nome=%s, email=%s, cpf=%s, data_nascimento=%s WHERE id=%s"""
-            execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento, self.id))
-            print("Pessoa atualizada com sucesso!")
-        else:
-            query = """INSERT INTO pessoa (nome, email, cpf, data_nascimento) VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento))
-            result = read_data("SELECT LAST_INSERT_ID()")
-            self.id = result[0][0]
-            print(f"Pessoa inserida com sucesso! Novo ID: {self.id}")
+        try:
+            if self.id:
+                query = """UPDATE pessoa SET nome=%s, email=%s, cpf=%s, data_nascimento=%s, observacoes=%s WHERE id=%s"""
+                execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento, self.observacoes, self.id))
+                return f'Pessoa atualizada com sucesso!'
+            else:
+                query = """INSERT INTO pessoa (nome, email, cpf, data_nascimento, observacoes) VALUES (%s, %s, %s, %s, %s)"""
+                execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento, self.observacoes))
+                result = read_data("SELECT LAST_INSERT_ID()")
+                self.id = result[0][0]
+                return f'Pessoa adicionada com sucesso! Novo ID: {self.id}'
+        except Exception as e:
+            return f'Erro ao salvar pessoa no banco de dados: {e}'
 
     def deletar(self):
         if not self.id:
@@ -79,10 +83,26 @@ class Pessoa:
         print(f"Pessoa {self.id} associada ao Cliente {cliente.id} com sucesso!")
 
     @staticmethod
-    def listar_todas():
-        result = read_data("SELECT id, nome, email, cpf, data_nascimento FROM pessoa ORDER BY id")
-        pessoas = [Pessoa(*row) for row in result]
+    def listar_todas(imprimir=True):
+        result = read_data("SELECT id, nome, email, cpf, data_nascimento, observacoes FROM pessoa ORDER BY id")
+        pessoas = [Pessoa(*row[:5]) for row in result]  # o método __init__ da classe Pessoa aceita só os 5 primeiros campos
+
+        if imprimir:
+            dados_tabela = []
+            for row in result:
+                dados_tabela.append([
+                    row[0],  # id
+                    row[1],  # nome
+                    row[2],  # email
+                    row[3],  # cpf
+                    row[4],  # data_nascimento
+                    row[5] if row[5] else ""  # observacoes
+                ])
+            cabecalhos = ["ID", "Nome", "Email", "CPF", "Data Nasc.", "Observações"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
         return pessoas
+    
 
 class Cargo:
     def __str__(self):

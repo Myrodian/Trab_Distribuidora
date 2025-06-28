@@ -1,6 +1,89 @@
 from fake_data import *
 from Models import *
 
+def adicionar_pessoa():
+    nome = input("Digite o nome da pessoa: ").strip()
+    email = input("Digite o email: ").strip()
+    cpf = input("Digite o CPF: ").strip()
+    data_nascimento = input("Digite a data de nascimento (YYYY-MM-DD): ").strip()
+    observacoes = input("Alguma observação? (opcional): ").strip()
+    
+    pessoa = Pessoa(
+        nome=nome,
+        email=email,
+        cpf=cpf,
+        data_nascimento=data_nascimento,
+        observacoes=observacoes  # Adicionando observações como atributo opcional
+    )
+    pessoa.salvar()
+
+    
+def editar_pessoa():
+    try:
+        pessoa_id = int(input("Digite o ID da pessoa que deseja editar: "))
+    except ValueError:
+        print("ID inválido.")
+        return menu_pessoas()
+
+    pessoa = Pessoa() 
+
+    print("Deixe em branco para manter o valor atual.")
+    nome = input(f"Nome atual: {pessoa.nome}. Novo nome: ").strip() or pessoa.nome
+    email = input(f"Email atual: {pessoa.email}. Novo email: ").strip() or pessoa.email
+    cpf = input(f"CPF atual: {pessoa.cpf}. Novo CPF: ").strip() or pessoa.cpf
+    data_nascimento = input(f"Data de nascimento atual: {pessoa.data_nascimento}. Nova data: ").strip() or pessoa.data_nascimento
+
+    pessoa.nome = nome
+    pessoa.email = email
+    pessoa.cpf = cpf
+    pessoa.data_nascimento = data_nascimento
+
+    pessoa.salvar()
+    print("Pessoa atualizada com sucesso!")
+    return menu_pessoas()
+
+def deletar_pessoa():
+    try:
+        pessoa_id = int(input("Digite o ID da pessoa que deseja deletar: "))
+    except ValueError:
+        print("ID inválido.")
+        return menu_pessoas()
+
+    pessoa = Pessoa()
+    if not pessoa.carregar(pessoa_id):
+        return menu_pessoas()
+
+    confirm = input(f"Tem certeza que deseja deletar a pessoa '{pessoa.nome}'? (s/n): ").strip().lower()
+    if confirm == 's':
+        pessoa.deletar()
+    else:
+        print("Operação cancelada.")
+    return menu_pessoas()
+
+def menu_pessoas():
+    Pessoa.listar_todas()
+
+    print("<========================================> Menu Pessoas <========================================>")
+    print("0 - Voltar ao menu principal")
+    print("1 - Adicionar pessoa")
+    print("2 - Editar pessoa")
+    print("3 - Deletar pessoa")
+
+    opcao = input("Escolha uma opção: ")
+
+    if opcao == "0":
+        return menu()
+    elif opcao == "1":
+        return adicionar_pessoa()
+    elif opcao == "2":
+        return editar_pessoa()
+    elif opcao == "3":
+        return deletar_pessoa()
+    else:
+        print("Opção inválida.")
+        return menu_pessoas()
+
+
 def adicionar_produto():
     nome = input("Qual o nome do novo produto? ")
 
@@ -260,5 +343,5 @@ def menu():
 
 if __name__ == '__main__':
     generate_data()
-    menu()
+    menu_pessoas()
     close_connection()
