@@ -1,11 +1,30 @@
 from fake_data import *
 from Models import *
 
-def adicionar_pessoa():
-    nome = input("Digite o nome da pessoa: ").strip()
+def adicionar_pessoas():
+    # Solicita os dados da pessoa
+    nome = input("Digite o nome da pessoa (ou digite 0 para voltar ao menu): ").strip()
+    if nome == "0":
+        return menu_pessoas()
+    
     email = input("Digite o email: ").strip()
-    cpf = input("Digite o CPF: ").strip()
-    data_nascimento = input("Digite a data de nascimento (YYYY-MM-DD): ").strip()
+
+    while True:
+        cpf = input("Digite o CPF: ").strip()
+        if len(cpf) == 11 and cpf.isdigit():
+            break
+        print("CPF deve conter exatamente 11 dígitos numéricos. Tente novamente.")
+
+    while True:
+        data_nascimento = input("Digite a data de nascimento (YYYY-MM-DD): ").strip()
+        if len(data_nascimento) == 10:
+            partes = data_nascimento.split('-')
+            if len(partes) == 3 and all(p.isdigit() for p in partes):
+                ano, mes, dia = partes
+                if len(ano) == 4 and len(mes) == 2 and len(dia) == 2:
+                    break
+        print("Data de nascimento deve estar no formato YYYY-MM-DD. Tente novamente.")
+
     observacoes = input("Alguma observação? (opcional): ").strip()
     
     pessoa = Pessoa(
@@ -15,34 +34,80 @@ def adicionar_pessoa():
         data_nascimento=data_nascimento,
         observacoes=observacoes  # Adicionando observações como atributo opcional
     )
-    pessoa.salvar()
-
-    
-def editar_pessoa():
-    try:
-        pessoa_id = int(input("Digite o ID da pessoa que deseja editar: "))
-    except ValueError:
-        print("ID inválido.")
+    sucesso, retorno = pessoa.salvar()
+    print(retorno)
+    if not sucesso:
+        return adicionar_pessoas()
+    return menu_pessoas()
+  
+def editar_pessoas():
+    print("\n--- Lista de Pessoas Cadastradas ---")
+    pessoas = Pessoa.listar_todas(imprimir=True)
+    # Solicita o ID da pessoa a ser editada
+    id_pessoa = input("Digite o ID da pessoa que deseja editar: ").strip()
+    if not id_pessoa.isdigit():
+        print("ID inválido. Operação cancelada.")
+        return
+    # Verifica se a pessoa existe no banco
+    pessoa_existente = read_data("SELECT id FROM pessoa WHERE id = %s", (id_pessoa,))
+    if not pessoa_existente:
+        print(f"Pessoa com ID {id_pessoa} não encontrada.")
         return menu_pessoas()
+    # Exibe os dados atuais da pessoa
+    pessoa_dados = read_data("SELECT nome, email, cpf, data_nascimento, observacoes FROM pessoa WHERE id = %s", (id_pessoa,))[0]
 
-    pessoa = Pessoa() 
+    print("\nDados atuais da pessoa:")
+    print(f"1. Nome: {pessoa_dados[0]}")
+    print(f"2. Email: {pessoa_dados[1]}")
+    print(f"3. CPF: {pessoa_dados[2]}")
+    print(f"4. Data de Nascimento: {pessoa_dados[3]}")
+    print(f"5. Observações: {pessoa_dados[4]}")
 
-    print("Deixe em branco para manter o valor atual.")
-    nome = input(f"Nome atual: {pessoa.nome}. Novo nome: ").strip() or pessoa.nome
-    email = input(f"Email atual: {pessoa.email}. Novo email: ").strip() or pessoa.email
-    cpf = input(f"CPF atual: {pessoa.cpf}. Novo CPF: ").strip() or pessoa.cpf
-    data_nascimento = input(f"Data de nascimento atual: {pessoa.data_nascimento}. Nova data: ").strip() or pessoa.data_nascimento
+    # Solicita as novas informações
+    nome = input("Novo nome ou pressione ENTER para manter: ").strip() or pessoa_dados[0]
+    email = input("Novo E-mail ou pressione ENTER para manter: ").strip() or pessoa_dados[1]
+    while True:
+        cpf_input = input("Novo CPF ou pressione ENTER para manter: ").strip()
+        if not cpf_input:
+            cpf = pessoa_dados[2]
+            break
+        if len(cpf_input) == 11 and cpf_input.isdigit():
+            cpf = cpf_input
+            break
+        print("CPF deve conter exatamente 11 dígitos numéricos. Tente novamente.")
 
-    pessoa.nome = nome
-    pessoa.email = email
-    pessoa.cpf = cpf
-    pessoa.data_nascimento = data_nascimento
+    while True:
+        data_nascimento_input = input("Digite a nova data de nascimento (YYYY-MM-DD) ou pressione ENTER para manter: ").strip()
+        if not data_nascimento_input:
+            data_nascimento = pessoa_dados[3]
+            break
+        # Verifica se o formato está correto (YYYY-MM-DD)
+        partes = data_nascimento_input.split('-')
+        if len(partes) == 3 and all(p.isdigit() for p in partes):
+            ano, mes, dia = partes
+            if len(ano) == 4 and len(mes) == 2 and len(dia) == 2:
+                data_nascimento = data_nascimento_input
+                break
+        print("Data de nascimento deve estar no formato YYYY-MM-DD. Tente novamente.")
 
-    pessoa.salvar()
-    print("Pessoa atualizada com sucesso!")
+    observacoes = input("Novas observações: ").strip() or pessoa_dados[4]
+     # Atualiza os dados no banco de dados
+    update_query = "UPDATE pessoa SET nome = %s, email = %s, cpf = %s, data_nascimento = %s, observacoes = %s WHERE id = %s"
+    params = (nome, email, cpf, data_nascimento, observacoes, id_pessoa)
+    rows_affected = write_data(update_query, params)
+
+    if rows_affected > 0:
+        print(f"Pessoa ID {id_pessoa} atualizada com sucesso!")
+
+    elif rows_affected == 0:
+        print("Nenhuma alteração foi feita nos dados da pessoa.")
+        
+    else:
+        print(f"Falha ao atualizar a pessoa ID {id_pessoa}.")
+    # Chama o menu, que deve listar pessoas atualizadas do banco
     return menu_pessoas()
 
-def deletar_pessoa():
+def deletar_pessoas():
     try:
         pessoa_id = int(input("Digite o ID da pessoa que deseja deletar: "))
     except ValueError:
@@ -51,17 +116,26 @@ def deletar_pessoa():
 
     pessoa = Pessoa()
     if not pessoa.carregar(pessoa_id):
+        print(f"Pessoa com ID {pessoa_id} não encontrada.")
         return menu_pessoas()
 
-    confirm = input(f"Tem certeza que deseja deletar a pessoa '{pessoa.nome}'? (s/n): ").strip().lower()
+    print(f"\nNome: {pessoa.nome}")
+    print(f"Email: {pessoa.email}")
+    print(f"CPF: {pessoa.cpf}")
+    print(f"Data de nascimento: {pessoa.data_nascimento}")
+    print(f"Observações: {pessoa.observacoes}")
+
+    confirm = input(f"\nTem certeza que deseja deletar a pessoa '{pessoa.nome}'? (s/n): ").strip().lower()
     if confirm == 's':
         pessoa.deletar()
     else:
         print("Operação cancelada.")
+    
     return menu_pessoas()
 
+
 def menu_pessoas():
-    Pessoa.listar_todas()
+    Pessoa.listar_todas(imprimir=True)
 
     print("<========================================> Menu Pessoas <========================================>")
     print("0 - Voltar ao menu principal")
@@ -74,11 +148,11 @@ def menu_pessoas():
     if opcao == "0":
         return menu()
     elif opcao == "1":
-        return adicionar_pessoa()
+        return adicionar_pessoas()
     elif opcao == "2":
-        return editar_pessoa()
+        return editar_pessoas()
     elif opcao == "3":
-        return deletar_pessoa()
+        return deletar_pessoas()
     else:
         print("Opção inválida.")
         return menu_pessoas()
@@ -261,7 +335,6 @@ def menu_juncoes():
     else:
         print("Opção inválida.")
         return menu_juncoes()
-
 
 def menu_group_by_having():
     print("<========================================> Menu Group By e Having <========================================>")

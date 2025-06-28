@@ -18,25 +18,59 @@ def close_connection():
 # Executa comandos INSERT, UPDATE, DELETE com suporte a parâmetros
 def execute_command(command, params=None):
     try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='root',
+            database='distribuidora'
+        )
+        cursor = conn.cursor()
         if params:
             cursor.execute(command, params)
         else:
             cursor.execute(command)
-        connection.commit()
+        conn.commit()
+        cursor.close()
+        conn.close()
         return True
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return False
 
-# Executa comandos SELECT com suporte a parâmetros
-def read_data(command, params=None):
-    try:
-        if params:
 
-            cursor.execute(command, params)
+# Executa comandos SELECT com suporte a parâmetros
+def read_data(query, params=None):
+    try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='root',
+            database='distribuidora'
+        )
+        cursor = conn.cursor()
+        if params:
+            cursor.execute(query, params)
         else:
-            cursor.execute(command)
-        return cursor.fetchall()
+            cursor.execute(query)
+        result = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return result
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return None
+    
+def write_data(query, params):
+    conn = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='root',
+        database='distribuidora'
+    )
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    conn.commit()
+    linhas_afetadas = cursor.rowcount
+    cursor.close()
+    conn.close()
+    return linhas_afetadas
