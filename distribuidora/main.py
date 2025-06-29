@@ -1,5 +1,6 @@
 from fake_data import *
 from Models import *
+from tabulate import tabulate
 
 def adicionar_pessoas():
     # Solicita os dados da pessoa
@@ -133,7 +134,6 @@ def deletar_pessoas():
     
     return menu_pessoas()
 
-
 def menu_pessoas():
     Pessoa.listar_todas(imprimir=True)
 
@@ -157,6 +157,187 @@ def menu_pessoas():
         print("Opção inválida.")
         return menu_pessoas()
 
+def adicionar_telefone():
+    print("\n--- Adicionar Telefone ---")
+    # Lista pessoas existentes para escolher
+    pessoas = Pessoa.listar_todas(imprimir=True)
+    if not pessoas:
+        print("Nenhuma pessoa cadastrada.")
+        return
+
+    try:
+        pessoa_id = int(input("Digite o ID da pessoa para associar o telefone: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+    # Verifica se o ID informado existe
+    if not any(p[0] == pessoa_id for p in pessoas):
+        print("Pessoa com o ID informado não encontrada.")
+        return
+    # Tipo do telefone
+    tipos_validos = ['residencial', 'comercial', 'celular']
+    while True:
+        tipo = input("Digite o tipo de telefone (residencial, comercial, celular): ").strip().lower()
+        if tipo in tipos_validos:
+            break
+        print("Tipo inválido. Os tipos válidos são: residencial, comercial, celular.")
+    # DDD
+    while True:
+        ddd = input("Digite o DDD (ex: 011): ").strip()
+        if len(ddd) == 3 and ddd.isdigit():
+            break
+        print("DDD inválido. Deve conter 3 dígitos numéricos.")
+    # Número
+    while True:
+        numero = input("Digite o número (ex: 912345678): ").strip()
+        if numero.isdigit() and 8 <= len(numero) <= 9:
+            break
+        print("Número inválido. Deve conter de 8 a 9 dígitos numéricos.")
+
+    telefone = Telefone(tipo=tipo, ddd=ddd, numero=numero, pessoa_id=pessoa_id)
+    sucesso, retorno = telefone.salvar()
+    print(retorno)
+
+    if sucesso:
+        Telefone.listar_por_pessoa(pessoa_id)
+        return menu_telefones()
+
+def editar_telefone():
+    print("\n--- Lista de Telefones Cadastrados ---")
+    telefones = Telefone.listar_todos(imprimir=True)
+    if not telefones:
+        print("Nenhum telefone cadastrado.")
+        return menu_telefones()
+
+    id_telefone = input("Digite o ID do telefone que deseja editar: ").strip()
+    if not id_telefone.isdigit():
+        print("ID inválido. Operação cancelada.")
+        return menu_telefones()
+
+    telefone_obj = Telefone()
+    if not telefone_obj.carregar(int(id_telefone)):
+        print("Telefone não encontrado.")
+        return menu_telefones()
+
+    print("\nDados atuais do telefone:")
+    print(f"1. Tipo: {telefone_obj.tipo}")
+    print(f"2. DDD: {telefone_obj.ddd}")
+    print(f"3. Número: {telefone_obj.numero}")
+    print(f"4. Pessoa ID: {telefone_obj.pessoa_id}")
+
+    tipos_validos = ['residencial', 'comercial', 'celular']
+    # Flag para controlar se houve alteração
+    alterado = False
+    # Editar tipo
+    while True:
+        tipo = input("Novo tipo (residencial, comercial, celular) ou ENTER para manter: ").strip().lower()
+        if tipo == "":
+            tipo = telefone_obj.tipo
+            break
+        if tipo in tipos_validos:
+            alterado = alterado or (tipo != telefone_obj.tipo)
+            break
+        print(f"Tipo inválido. Os tipos válidos são: {', '.join(tipos_validos)}.")
+    # Editar DDD
+    while True:
+        ddd = input("Novo DDD (3 dígitos) ou ENTER para manter: ").strip()
+        if ddd == "":
+            ddd = telefone_obj.ddd
+            break
+        if len(ddd) == 3 and ddd.isdigit():
+            alterado = alterado or (ddd != telefone_obj.ddd)
+            break
+        print("DDD inválido. Deve conter 3 dígitos numéricos.")
+    # Editar número
+    while True:
+        numero = input("Novo número (8 a 9 dígitos) ou ENTER para manter: ").strip()
+        if numero == "":
+            numero = telefone_obj.numero
+            break
+        if numero.isdigit() and 8 <= len(numero) <= 9:
+            alterado = alterado or (numero != telefone_obj.numero)
+            break
+        print("Número inválido. Deve conter de 8 a 9 dígitos numéricos.")
+    # Editar pessoa_id
+    pessoas = Pessoa.listar_todas(imprimir=True)
+    if not pessoas:
+        print("Nenhuma pessoa cadastrada para associar ao telefone.")
+        return
+
+    while True:
+        pessoa_id_input = input("Novo ID da pessoa para associar ou ENTER para manter: ").strip()
+        if pessoa_id_input == "":
+            pessoa_id = telefone_obj.pessoa_id
+            break
+        if pessoa_id_input.isdigit() and any(p[0] == int(pessoa_id_input) for p in pessoas):
+            pessoa_id = int(pessoa_id_input)
+            alterado = alterado or (pessoa_id != telefone_obj.pessoa_id)
+            break
+        print("ID de pessoa inválido ou não encontrado. Tente novamente.")
+
+    if not alterado:
+        print("Nenhuma alteração foi feita no telefone.")
+        return menu_telefones()
+    # Atualiza objeto telefone com novos valores
+    telefone_obj.tipo = tipo
+    telefone_obj.ddd = ddd
+    telefone_obj.numero = numero
+    telefone_obj.pessoa_id = pessoa_id
+
+    sucesso, retorno = telefone_obj.salvar()
+    print(retorno)
+    return menu_telefones()
+
+def deletar_telefone():
+    
+    print("\n--- Lista de Telefones Cadastrados ---")
+    telefones = Telefone.listar_todos(imprimir=True)
+    if not telefones:
+        print("Nenhum telefone cadastrado.")
+        return menu_telefones()
+
+    try:
+        telefone_id = int(input("Digite o ID do telefone que deseja deletar: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return menu_telefones()
+
+    telefone = Telefone()
+    if not telefone.carregar(telefone_id):
+        print(f"Telefone com ID {telefone_id} não encontrado.")
+        return menu_telefones()
+
+    print(f"\nTelefone: ({telefone.ddd}) {telefone.numero} - {telefone.tipo}")
+    print(f"Associado à Pessoa ID: {telefone.pessoa_id}")
+
+    confirm = input(f"\nTem certeza que deseja deletar este telefone? (s/n): ").strip().lower()
+    if confirm == 's':
+        telefone.deletar()
+    else:
+        print("Operação cancelada.")
+
+    return menu_telefones()
+    
+def menu_telefones():
+    print("<========================================> Menu Telefones <========================================>")
+    print("0 - Voltar ao menu principal")
+    print("1 - Adicionar telefone")
+    print("2 - Editar telefone")
+    print("3 - Deletar telefone")
+
+    opcao = input("Escolha uma opção: ")
+
+    if opcao == "0":
+        return menu()
+    elif opcao == "1":
+        return adicionar_telefone()
+    elif opcao == "2":
+        return editar_telefone()
+    elif opcao == "3":
+        return deletar_telefone()
+    else:
+        print("Opção inválida.")
+        return menu_telefones()
 
 def adicionar_produto():
     nome = input("Qual o nome do novo produto? ")
@@ -401,6 +582,8 @@ def menu_trabalho():
 def menu():
     print("0 - Sair")
     print("1 - Ir para o menu de produtos")
+    print("2 - Ir para o menu de pessoas")
+    print("3 - Ir para o menu de telefones")
     print("2 - Ir para o menu de fornecedores")
     print("9 - Pesquisas Importantes para o trabalho")
     op = input("Digite uma opção: ")
@@ -408,6 +591,10 @@ def menu():
         return
     elif op == "1":
         menu_produtos()
+    elif op == "2":
+        menu_pessoas()
+    elif op == "3":
+        menu_telefones()
     elif op == "9":
         menu_trabalho()
     else:
@@ -416,5 +603,5 @@ def menu():
 
 if __name__ == '__main__':
     generate_data()
-    menu_pessoas()
+    menu_telefones()
     close_connection()

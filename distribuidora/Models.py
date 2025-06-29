@@ -254,9 +254,6 @@ class Fornecedor:
         return fornecedores
 
 class Telefone:
-    def __str__(self):
-        return self.numero
-
     def __init__(self, id=None, tipo=None, ddd=None, numero=None, pessoa_id=None):
         self.id = id
         self.tipo = tipo
@@ -264,35 +261,64 @@ class Telefone:
         self.numero = numero
         self.pessoa_id = pessoa_id
 
+    def __str__(self):
+        return f"({self.ddd}) {self.numero} - {self.tipo}"
+
     def carregar(self, id):
         result = read_data("SELECT id, tipo, ddd, numero, Pessoa_id FROM telefone WHERE id = %s", (id,))
-        if result:
-            self.id, self.tipo, self.ddd, self.numero, self.pessoa_id = result[0]
-            print(f"Telefone ID {self.id} carregado com sucesso!")
-            return True
-        else:
+        if not result:
             print("Telefone não encontrado.")
             return False
 
+        self.id, self.tipo, self.ddd, self.numero, self.pessoa_id = result[0]
+        print(f"Telefone ID {self.id} carregado com sucesso!")
+        return True
+
     def salvar(self):
         if self.id:
-            query = """UPDATE telefone SET tipo=%s, ddd=%s, numero=%s WHERE id=%s"""
-            execute_command(query, (self.tipo, self.ddd, self.numero, self.id))
-            print("Telefone atualizado com sucesso!")
+            query = """UPDATE telefone SET tipo=%s, ddd=%s, numero=%s, Pessoa_id=%s WHERE id=%s"""
+            sucesso = execute_command(query, (self.tipo, self.ddd, self.numero, self.pessoa_id, self.id))
+            if not sucesso:
+                return False, "Telefone não foi atualizado corretamente. Verifique os dados."
+            return True, "Telefone atualizado com sucesso!"
         else:
             query = """INSERT INTO telefone (tipo, ddd, numero, Pessoa_id) VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.tipo, self.ddd, self.numero, self.pessoa_id))
+            sucesso = execute_command(query, (self.tipo, self.ddd, self.numero, self.pessoa_id))
+            if not sucesso:
+                return False, "Telefone não foi inserido corretamente. Verifique os dados."
             result = read_data("SELECT LAST_INSERT_ID()")
             self.id = result[0][0]
-            print(f"Telefone inserido com sucesso! Novo ID: {self.id}")
+            return True, f"Telefone inserido com sucesso! Novo ID: {self.id}"
 
     def deletar(self):
         if not self.id:
-            print("Telefone não carregado. Não é possível deletar.")
+            print("Telefone não carregado no objeto. Não pode deletar.")
             return
-        execute_command("DELETE FROM telefone WHERE id = %s", (self.id,))
-        print("Telefone deletado com sucesso!")
-        self.id = None
+        linhas = write_data("DELETE FROM telefone WHERE id = %s", (self.id,))
+        if linhas > 0:
+            print(f"Telefone ID {self.id} deletado com sucesso.")
+            self.id = None
+        else:
+            print("Falha ao deletar o telefone.")
+
+    @staticmethod
+    def listar_todos(imprimir=False):
+        # Busca todos os telefones no banco
+        resultados = read_data("SELECT id, tipo, ddd, numero, Pessoa_id FROM telefone ORDER BY id")
+        if not resultados:
+            if imprimir:
+                print("Nenhum telefone cadastrado.")
+            return []
+
+        if imprimir:
+            tabela = []
+            for row in resultados:
+                id_, tipo, ddd, numero, pessoa_id = row
+                tabela.append([id_, f"({ddd}) {numero}", tipo, pessoa_id])
+            print(tabulate(tabela, headers=["ID", "Telefone", "Tipo", "Pessoa ID"], tablefmt="grid"))
+
+        return resultados
+
 
 class Funcionario:
     def __str__(self):
@@ -381,7 +407,6 @@ class Funcionario:
             print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
 
         return funcionarios
-
 
 class Produto:
     def __str__(self):
