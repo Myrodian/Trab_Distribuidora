@@ -93,7 +93,7 @@ class Pessoa:
     def listar_todas(imprimir=True):
         result = read_data("SELECT id, nome, email, cpf, data_nascimento, observacoes FROM pessoa ORDER BY id")
 
-        pessoas = [Pessoa(*row[:5]) for row in result]  # cria objetos Pessoa
+        pessoas = [Pessoa(*row) for row in result]  # cria objetos Pessoa
         if imprimir:
             dados_tabela = []
             for row in result:
