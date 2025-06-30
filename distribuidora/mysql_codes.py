@@ -1,6 +1,6 @@
-import mysql.connector
+import mysql.connector 
 
-# Conexão com o banco de dados MySQL
+# Conexão com o banco de dados MySQL (global)
 connection = mysql.connector.connect(
     host='localhost',
     user='root',
@@ -18,25 +18,33 @@ def close_connection():
 # Executa comandos INSERT, UPDATE, DELETE com suporte a parâmetros
 def execute_command(command, params=None):
     try:
-        if params:
-            cursor.execute(command, params)
-        else:
-            cursor.execute(command)
+        cursor.execute(command, params)
         connection.commit()
-        return True
+        last_id = cursor.lastrowid
+        affected = cursor.rowcount
+        return True, last_id if affected > 0 else None
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
-        return False
+        print(f"Erro: {err}")
+        return False, None
 
 # Executa comandos SELECT com suporte a parâmetros
-def read_data(command, params=None):
+def read_data(query, params=None):
     try:
         if params:
-
-            cursor.execute(command, params)
+            cursor.execute(query, params)
         else:
-            cursor.execute(command)
+            cursor.execute(query)
         return cursor.fetchall()
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
+        print(f"Erro: {err}")
         return None
+
+# Executa comandos INSERT/UPDATE/DELETE e retorna número de linhas afetadas
+def write_data(query, params):
+    try:
+        cursor.execute(query, params)
+        connection.commit()
+        return cursor.rowcount
+    except mysql.connector.Error as err:
+        print(f"Erro: {err}")
+        return 0

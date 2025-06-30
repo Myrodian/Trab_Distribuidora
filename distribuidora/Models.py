@@ -6,42 +6,53 @@ class Pessoa:
     def __str__(self):
         return self.nome
 
-    def __init__(self, id=None, nome=None, email=None, cpf=None, data_nascimento=None):
+    def __init__(self, id=None, nome=None, email=None, cpf=None, data_nascimento=None, observacoes=None):
         self.id = id
         self.nome = nome
         self.email = email
         self.cpf = cpf
         self.data_nascimento = data_nascimento
+        self.observacoes = observacoes
 
     def carregar(self, id):
-        result = read_data("SELECT id, nome, email, cpf, data_nascimento FROM pessoa WHERE id = %s", (id,))
-        if result:
-            self.id, self.nome, self.email, self.cpf, self.data_nascimento = result[0]
-            print(f"Pessoa ID {self.id} carregada!")
-            return True
-        else:
+    # Carrega dados da pessoa
+        result = read_data("SELECT id, nome, email, cpf, data_nascimento, observacoes FROM pessoa WHERE id = %s", (id,))
+        
+        if not result:
             print("Pessoa não encontrada.")
             return False
 
+        self.id, self.nome, self.email, self.cpf, self.data_nascimento, self.observacoes = result[0]
+        print(f"Pessoa ID {self.id} carregada!")
+        return True
+
     def salvar(self):
         if self.id:
-            query = """UPDATE pessoa SET nome=%s, email=%s, cpf=%s, data_nascimento=%s WHERE id=%s"""
-            execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento, self.id))
-            print("Pessoa atualizada com sucesso!")
+            query = """UPDATE pessoa SET nome=%s, email=%s, cpf=%s, data_nascimento=%s, observacoes=%s WHERE id=%s"""
+            sucesso = execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento, self.observacoes, self.id))
+            if not sucesso:
+                return False, "Pessoa não foi atualizada corretamente. Verifique os dados."
+            return True, "Pessoa atualizada com sucesso!"
         else:
-            query = """INSERT INTO pessoa (nome, email, cpf, data_nascimento) VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento))
+            query = """INSERT INTO pessoa (nome, email, cpf, data_nascimento, observacoes) VALUES (%s, %s, %s, %s, %s)"""
+            sucesso = execute_command(query, (self.nome, self.email, self.cpf, self.data_nascimento, self.observacoes))
+            if not sucesso:
+                return False, "Pessoa não foi inserida corretamente. Verifique os dados."
+
             result = read_data("SELECT LAST_INSERT_ID()")
             self.id = result[0][0]
-            print(f"Pessoa inserida com sucesso! Novo ID: {self.id}")
-
+            return True, f"Pessoa adicionada com sucesso! Novo ID: {self.id}"
+        
     def deletar(self):
         if not self.id:
             print("Pessoa não carregada no objeto. Não pode deletar.")
             return
-        execute_command("DELETE FROM pessoa WHERE id = %s", (self.id,))
-        print("Pessoa deletada!")
-        self.id = None
+        linhas = write_data("DELETE FROM pessoa WHERE id = %s", (self.id,))
+        if linhas > 0:
+            print(f"Pessoa ID {self.id} deletada com sucesso.")
+            self.id = None
+        else:
+            print("Falha ao deletar a pessoa.")
 
     # MÉTODOS DE ASSOCIAÇÃO
     def associar_fornecedor(self, fornecedor):
@@ -79,15 +90,27 @@ class Pessoa:
         print(f"Pessoa {self.id} associada ao Cliente {cliente.id} com sucesso!")
 
     @staticmethod
-    def listar_todas():
-        result = read_data("SELECT id, nome, email, cpf, data_nascimento FROM pessoa ORDER BY id")
-        pessoas = [Pessoa(*row) for row in result]
-        return pessoas
+    def listar_todas(imprimir=True):
+        result = read_data("SELECT id, nome, email, cpf, data_nascimento, observacoes FROM pessoa ORDER BY id")
+
+        pessoas = [Pessoa(*row) for row in result]  # cria objetos Pessoa
+        if imprimir:
+            dados_tabela = []
+            for row in result:
+                dados_tabela.append([
+                    row[0],  # id
+                    row[1],  # nome
+                    row[2],  # email
+                    row[3],  # cpf
+                    row[4],  # data_nascimento
+                    row[5] if row[5] else ""  # observacoes
+                ])
+            cabecalhos = ["ID", "Nome", "Email", "CPF", "Data Nasc.", "Observações"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return pessoas  # retorna objetos Pessoa
 
 class Cargo:
-    def __str__(self):
-        return self.nome
-
     def __init__(self, id=None, nome=None, salario_categoria=None, nivel_hierarquia=None, observacoes=None):
         self.id = id
         self.nome = nome
@@ -95,35 +118,79 @@ class Cargo:
         self.nivel_hierarquia = nivel_hierarquia
         self.observacoes = observacoes
 
-    def carregar(self, id):
-        result = read_data("SELECT id, nome, salario_categoria, nivel_hierarquia, observacoes FROM cargo WHERE id = %s", (id,))
-        if result:
-            self.id, self.nome, self.salario_categoria, self.nivel_hierarquia, self.observacoes = result[0]
-            print(f"Cargo ID {self.id} carregado com sucesso!")
-            return True
+    def salvar(self):
+        if self.id:
+            query = """
+                UPDATE cargo
+                SET nome = %s,
+                    salario_categoria = %s,
+                    nivel_hierarquia = %s,
+                    observacoes = %s
+                WHERE id = %s
+            """
+            sucesso, _ = execute_command(query, (
+                self.nome, self.salario_categoria,
+                self.nivel_hierarquia, self.observacoes, self.id
+            ))
+            if not sucesso:
+                return False, "Cargo não foi atualizado corretamente."
+            return True, "Cargo atualizado com sucesso!"
         else:
+            query = """
+                INSERT INTO cargo (nome, salario_categoria, nivel_hierarquia, observacoes)
+                VALUES (%s, %s, %s, %s)
+            """
+            sucesso, last_id = execute_command(query, (
+                self.nome, self.salario_categoria,
+                self.nivel_hierarquia, self.observacoes
+            ))
+            if not sucesso or last_id is None:
+                return False, "Cargo não foi inserido corretamente."
+            self.id = last_id
+            return True, f"Cargo inserido com sucesso! Novo ID: {self.id}"
+
+    def carregar(self, id):
+        result = read_data(
+            "SELECT id, nome, salario_categoria, nivel_hierarquia, observacoes FROM cargo WHERE id = %s", (id,)
+        )
+        if not result:
             print("Cargo não encontrado.")
             return False
 
-    def salvar(self):
-        if self.id:
-            query = """UPDATE cargo SET nome=%s, salario_categoria=%s, nivel_hierarquia=%s, observacoes=%s WHERE id=%s"""
-            execute_command(query, (self.nome, self.salario_categoria, self.nivel_hierarquia, self.observacoes, self.id))
-            print("Cargo atualizado com sucesso!")
-        else:
-            query = """INSERT INTO cargo (nome, salario_categoria, nivel_hierarquia, observacoes) VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.nome, self.salario_categoria, self.nivel_hierarquia, self.observacoes))
-            result = read_data("SELECT LAST_INSERT_ID()")
-            self.id = result[0][0]
-            print(f"Cargo inserido com sucesso! Novo ID: {self.id}")
+        self.id, self.nome, self.salario_categoria, self.nivel_hierarquia, self.observacoes = result[0]
+        print(f"Cargo ID {self.id} carregado com sucesso!")
+        return True
 
     def deletar(self):
         if not self.id:
             print("Cargo não carregado. Não é possível deletar.")
             return
-        execute_command("DELETE FROM cargo WHERE id = %s", (self.id,))
-        print("Cargo deletado com sucesso!")
-        self.id = None
+
+        linhas = write_data("DELETE FROM cargo WHERE id = %s", (self.id,))
+        if linhas > 0:
+            print(f"Cargo ID {self.id} deletado com sucesso.")
+            self.id = None
+        else:
+            print("Falha ao deletar o cargo.")
+
+    @staticmethod
+    def listar_todos(imprimir=False):
+        resultados = read_data(
+            "SELECT id, nome, salario_categoria, nivel_hierarquia, observacoes FROM cargo ORDER BY id"
+        )
+        if not resultados:
+            if imprimir:
+                print("Nenhum cargo cadastrado.")
+            return []
+
+        if imprimir:
+            tabela = []
+            for row in resultados:
+                id_, nome, salario, nivel, obs = row
+                tabela.append([id_, nome, salario, nivel, obs or ""])
+            print(tabulate(tabela, headers=["ID", "Nome", "Salário", "Nível", "Observações"], tablefmt="grid"))
+
+        return resultados
 
 class Fornecedor:
     def __str__(self):
@@ -229,9 +296,6 @@ class Fornecedor:
         return fornecedores
 
 class Telefone:
-    def __str__(self):
-        return self.numero
-
     def __init__(self, id=None, tipo=None, ddd=None, numero=None, pessoa_id=None):
         self.id = id
         self.tipo = tipo
@@ -239,35 +303,63 @@ class Telefone:
         self.numero = numero
         self.pessoa_id = pessoa_id
 
+    def __str__(self):
+        return f"({self.ddd}) {self.numero} - {self.tipo}"
+
     def carregar(self, id):
         result = read_data("SELECT id, tipo, ddd, numero, Pessoa_id FROM telefone WHERE id = %s", (id,))
-        if result:
-            self.id, self.tipo, self.ddd, self.numero, self.pessoa_id = result[0]
-            print(f"Telefone ID {self.id} carregado com sucesso!")
-            return True
-        else:
+        if not result:
             print("Telefone não encontrado.")
             return False
 
+        self.id, self.tipo, self.ddd, self.numero, self.pessoa_id = result[0]
+        print(f"Telefone ID {self.id} carregado com sucesso!")
+        return True
+
     def salvar(self):
         if self.id:
-            query = """UPDATE telefone SET tipo=%s, ddd=%s, numero=%s WHERE id=%s"""
-            execute_command(query, (self.tipo, self.ddd, self.numero, self.id))
-            print("Telefone atualizado com sucesso!")
+            query = """UPDATE telefone SET tipo=%s, ddd=%s, numero=%s, Pessoa_id=%s WHERE id=%s"""
+            sucesso = execute_command(query, (self.tipo, self.ddd, self.numero, self.pessoa_id, self.id))
+            if not sucesso:
+                return False, "Telefone não foi atualizado corretamente. Verifique os dados."
+            return True, "Telefone atualizado com sucesso!"
         else:
             query = """INSERT INTO telefone (tipo, ddd, numero, Pessoa_id) VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.tipo, self.ddd, self.numero, self.pessoa_id))
+            sucesso = execute_command(query, (self.tipo, self.ddd, self.numero, self.pessoa_id))
+            if not sucesso:
+                return False, "Telefone não foi inserido corretamente. Verifique os dados."
             result = read_data("SELECT LAST_INSERT_ID()")
             self.id = result[0][0]
-            print(f"Telefone inserido com sucesso! Novo ID: {self.id}")
+            return True, f"Telefone inserido com sucesso! Novo ID: {self.id}"
 
     def deletar(self):
         if not self.id:
-            print("Telefone não carregado. Não é possível deletar.")
+            print("Telefone não carregado no objeto. Não pode deletar.")
             return
-        execute_command("DELETE FROM telefone WHERE id = %s", (self.id,))
-        print("Telefone deletado com sucesso!")
-        self.id = None
+        linhas = write_data("DELETE FROM telefone WHERE id = %s", (self.id,))
+        if linhas > 0:
+            print(f"Telefone ID {self.id} deletado com sucesso.")
+            self.id = None
+        else:
+            print("Falha ao deletar o telefone.")
+
+    @staticmethod
+    def listar_todos(imprimir=False):
+        # Busca todos os telefones no banco
+        resultados = read_data("SELECT id, tipo, ddd, numero, Pessoa_id FROM telefone ORDER BY id")
+        if not resultados:
+            if imprimir:
+                print("Nenhum telefone cadastrado.")
+            return []
+
+        if imprimir:
+            tabela = []
+            for row in resultados:
+                id_, tipo, ddd, numero, pessoa_id = row
+                tabela.append([id_, f"({ddd}) {numero}", tipo, pessoa_id])
+            print(tabulate(tabela, headers=["ID", "Telefone", "Tipo", "Pessoa ID"], tablefmt="grid"))
+
+        return resultados
 
 class Funcionario:
     def __str__(self):
@@ -279,18 +371,19 @@ class Funcionario:
             nome = "Desconhecido"
         return nome
 
-    def __init__(self, id=None, data_admissao=None, matricula=None, data_demissao=None, pessoa_id=None, cargo_id=None):
+    def __init__(self, id=None, data_admissao=None, matricula=None, data_demissao=None, pessoa_id=None, cargo_id=None, observacoes=None):
         self.id = id
         self.data_admissao = data_admissao
         self.matricula = matricula
         self.data_demissao = data_demissao
         self.pessoa_id = pessoa_id
         self.cargo_id = cargo_id
+        self.observacoes = observacoes
 
     def carregar(self, id):
-        result = read_data("SELECT id, data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id FROM funcionario WHERE id = %s", (id,))
+        result = read_data("SELECT id, data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id, observacoes FROM funcionario WHERE id = %s", (id,))
         if result:
-            self.id, self.data_admissao, self.matricula, self.data_demissao, self.pessoa_id, self.cargo_id = result[0]
+            self.id, self.data_admissao, self.matricula, self.data_demissao, self.pessoa_id, self.cargo_id, self.observacoes = result[0]
             print(f"Funcionário ID {self.id} carregado com sucesso!")
             return True
         else:
@@ -298,16 +391,55 @@ class Funcionario:
             return False
 
     def salvar(self):
-        if self.id:
-            query = """UPDATE funcionario SET data_admissao=%s, matricula=%s, data_demissao=%s WHERE id=%s"""
-            execute_command(query, (self.data_admissao, self.matricula, self.data_demissao, self.id))
-            print("Funcionário atualizado com sucesso!")
-        else:
-            query = """INSERT INTO funcionario (data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id) VALUES (%s, %s, %s, %s)"""
-            execute_command(query, (self.data_admissao, self.matricula, self.data_demissao, self.pessoa_id, self.cargo_id))
-            result = read_data("SELECT LAST_INSERT_ID()")
-            self.id = result[0][0]
-            print(f"Funcionário inserido com sucesso! Novo ID: {self.id}")
+        try:
+            if self.id:
+                # Carregar os dados atuais do banco para comparar
+                original = read_data(
+                    "SELECT data_admissao, matricula, data_demissao, observacoes FROM funcionario WHERE id = %s",
+                    (self.id,)
+                )
+                if original:
+                    original_data = original[0]
+                    if (
+                        self.data_admissao == original_data[0] and
+                        self.matricula == original_data[1] and
+                        self.data_demissao == original_data[2] and
+                        self.observacoes == original_data[3]
+                    ):
+                        print("Nenhuma alteração detectada. Funcionário não foi modificado.")
+                        return
+
+                query = "UPDATE funcionario SET data_admissao = %s, matricula = %s, data_demissao = %s, observacoes = %s WHERE id = %s"
+                sucesso = execute_command(query, (
+                    self.data_admissao,
+                    self.matricula,
+                    self.data_demissao,
+                    self.observacoes,
+                    self.id
+                ))
+                if sucesso:
+                    print("Funcionário atualizado com sucesso!")
+                else:
+                    print("Falha ao atualizar o funcionário. Verifique os dados.")
+            else:
+                query = "INSERT INTO funcionario (data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id, observacoes) VALUES (%s, %s, %s, %s, %s, %s)"
+                sucesso = execute_command(query, (
+                    self.data_admissao,
+                    self.matricula,
+                    self.data_demissao,
+                    self.pessoa_id,
+                    self.cargo_id,
+                    self.observacoes
+                ))
+                if sucesso:
+                    result = read_data("SELECT LAST_INSERT_ID()")
+                    self.id = result[0][0]
+                    print(f"Funcionário inserido com sucesso! Novo ID: {self.id}")
+                else:
+                    print("Erro ao inserir funcionário. Verifique os dados e tente novamente.")
+        except Exception as e:
+            print(f"Erro inesperado ao salvar o funcionário: {e}")
+
 
     def deletar(self):
         if not self.id:
@@ -321,15 +453,20 @@ class Funcionario:
     def listar_todos(imprimir=True):
         result = read_data("""
             SELECT f.id, f.data_admissao, f.matricula, f.data_demissao,
-                   f.Pessoa_id, f.Cargo_id,
-                   p.nome AS nome_pessoa,
-                   c.nome AS nome_cargo
+                f.Pessoa_id, f.Cargo_id,
+                p.nome AS nome_pessoa,
+                c.nome AS nome_cargo,
+                f.observacoes
             FROM funcionario f
             INNER JOIN pessoa p ON f.Pessoa_id = p.id
             INNER JOIN cargo c ON f.Cargo_id = c.id
             WHERE f.data_demissao IS NULL
             ORDER BY f.id
         """)
+
+        if result is None:
+            print("Erro ao buscar funcionários no banco.")
+            return []
 
         funcionarios = []
         dados_tabela = []
@@ -340,23 +477,25 @@ class Funcionario:
                 matricula=row[2],
                 data_demissao=row[3],
                 pessoa_id=row[4],
-                cargo_id=row[5]
+                cargo_id=row[5],
+                observacoes=row[8]
             )
             funcionarios.append(funcionario)
             dados_tabela.append([
-                row[0],  # id
-                row[6],  # nome da pessoa
-                row[2],  # matrícula
-                row[1],  # data de admissão
-                row[7],  # nome do cargo
+                row[0],        # ID
+                row[6],        # nome da pessoa
+                row[2],        # matrícula
+                row[1],        # data de admissão
+                row[7],        # nome do cargo
+                row[8] or ""   # observações
             ])
 
         if imprimir:
-            cabecalhos = ["ID", "Nome", "Matrícula", "Admissão", "Cargo"]
+            from tabulate import tabulate
+            cabecalhos = ["ID", "Nome", "Matrícula", "Admissão", "Cargo", "Observações"]
             print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
 
         return funcionarios
-
 
 class Produto:
     def __str__(self):
