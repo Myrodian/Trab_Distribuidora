@@ -95,7 +95,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table `Distribuidora`.`Funcionario`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `Distribuidora`.`Funcionario` ;
+DROP TABLE IF EXISTS `Distribuidora`.`Funcionario`;
 
 CREATE TABLE IF NOT EXISTS `Distribuidora`.`Funcionario` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -103,13 +103,13 @@ CREATE TABLE IF NOT EXISTS `Distribuidora`.`Funcionario` (
   `matricula` VARCHAR(20) NOT NULL,
   `data_demissao` DATE NULL,
   `observacoes` TEXT NULL,
-  `Pessoa_id` INT UNSIGNED NOT NULL,
+  `Pessoa_id` INT UNSIGNED NULL,  -- <- agora permite NULL
   `Cargo_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,
-  INDEX `fk_Funcionario_Pessoa1_idx` (`Pessoa_id` ASC) ,
-  INDEX `fk_Funcionario_Cargo1_idx` (`Cargo_id` ASC) ,
-  UNIQUE INDEX `matricula_UNIQUE` (`matricula` ASC) ,
+  INDEX `fk_Funcionario_Pessoa1_idx` (`Pessoa_id` ASC),
+  INDEX `fk_Funcionario_Cargo1_idx` (`Cargo_id` ASC),
+  UNIQUE INDEX `matricula_UNIQUE` (`matricula` ASC),
   CONSTRAINT `fk_Funcionario_Pessoa1`
     FOREIGN KEY (`Pessoa_id`)
     REFERENCES `Distribuidora`.`Pessoa` (`id`)
@@ -119,9 +119,23 @@ CREATE TABLE IF NOT EXISTS `Distribuidora`.`Funcionario` (
     FOREIGN KEY (`Cargo_id`)
     REFERENCES `Distribuidora`.`Cargo` (`id`)
     ON DELETE RESTRICT
-    ON UPDATE CASCADE)
+    ON UPDATE CASCADE
+)
 ENGINE = InnoDB;
 
+-- Trigger para soft delete: quando data_demissao for preenchida, Pessoa_id se torna NULL
+DELIMITER $$
+
+CREATE TRIGGER trg_funcionario_soft_delete
+BEFORE UPDATE ON `Distribuidora`.`Funcionario`
+FOR EACH ROW
+BEGIN
+  IF NEW.data_demissao IS NOT NULL AND OLD.data_demissao IS NULL THEN
+    SET NEW.Pessoa_id = NULL;
+  END IF;
+END$$
+
+DELIMITER ;
 
 -- -----------------------------------------------------
 -- Table `Distribuidora`.`Estado`
