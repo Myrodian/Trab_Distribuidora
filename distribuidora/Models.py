@@ -364,9 +364,11 @@ class Telefone:
 class Funcionario:
     def __str__(self):
         pessoa = Pessoa()
-        if self.pessoa_id:
-            pessoa.carregar(self.pessoa_id)
-            nome = pessoa.nome
+        if self.pessoa_id is not None:
+            if pessoa.carregar(self.pessoa_id):
+                nome = pessoa.nome
+            else:
+                nome = "Desconhecido"
         else:
             nome = "Desconhecido"
         return nome
@@ -375,13 +377,16 @@ class Funcionario:
         self.id = id
         self.data_admissao = data_admissao
         self.matricula = matricula
-        self.data_demissao = data_demissao
+        self.data_demissao = data_demissao if data_demissao else None
         self.pessoa_id = pessoa_id
         self.cargo_id = cargo_id
         self.observacoes = observacoes
 
     def carregar(self, id):
-        result = read_data("SELECT id, data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id, observacoes FROM funcionario WHERE id = %s", (id,))
+        result = read_data(
+            "SELECT id, data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id, observacoes FROM funcionario WHERE id = %s",
+            (id,)
+        )
         if result:
             self.id, self.data_admissao, self.matricula, self.data_demissao, self.pessoa_id, self.cargo_id, self.observacoes = result[0]
             print(f"Funcionário ID {self.id} carregado com sucesso!")
@@ -392,8 +397,11 @@ class Funcionario:
 
     def salvar(self):
         try:
+            # Garante que data_demissao seja None se vazia ou inválida
+            if not self.data_demissao:
+                self.data_demissao = None
+
             if self.id:
-                # Carregar os dados atuais do banco para comparar
                 original = read_data(
                     "SELECT data_admissao, matricula, data_demissao, observacoes FROM funcionario WHERE id = %s",
                     (self.id,)
@@ -409,7 +417,11 @@ class Funcionario:
                         print("Nenhuma alteração detectada. Funcionário não foi modificado.")
                         return
 
-                query = "UPDATE funcionario SET data_admissao = %s, matricula = %s, data_demissao = %s, observacoes = %s WHERE id = %s"
+                query = """
+                    UPDATE funcionario
+                    SET data_admissao = %s, matricula = %s, data_demissao = %s, observacoes = %s
+                    WHERE id = %s
+                """
                 sucesso = execute_command(query, (
                     self.data_admissao,
                     self.matricula,
@@ -422,7 +434,11 @@ class Funcionario:
                 else:
                     print("Falha ao atualizar o funcionário. Verifique os dados.")
             else:
-                query = "INSERT INTO funcionario (data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id, observacoes) VALUES (%s, %s, %s, %s, %s, %s)"
+                query = """
+                    INSERT INTO funcionario
+                    (data_admissao, matricula, data_demissao, Pessoa_id, Cargo_id, observacoes)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
                 sucesso = execute_command(query, (
                     self.data_admissao,
                     self.matricula,
@@ -440,23 +456,29 @@ class Funcionario:
         except Exception as e:
             print(f"Erro inesperado ao salvar o funcionário: {e}")
 
-
     def deletar(self):
         if not self.id:
             print("Funcionário não carregado. Não é possível deletar.")
             return
         self.data_demissao = datetime.now().strftime('%Y-%m-%d')
-        execute_command("UPDATE funcionario SET data_demissao = %s WHERE id = %s", (self.data_demissao, self.id))
-        print(f"Funcionário marcado como desligado em {self.data_demissao}.")
+        sucesso = execute_command(
+            "UPDATE funcionario SET data_demissao = %s WHERE id = %s",
+            (self.data_demissao, self.id)
+        )
+        if sucesso:
+            self.pessoa_id = None  # Atualiza a instância localmente
+            print(f"Funcionário marcado como desligado em {self.data_demissao}.")
+        else:
+            print("Falha ao marcar funcionário como desligado.")
 
     @staticmethod
     def listar_todos(imprimir=True):
         result = read_data("""
             SELECT f.id, f.data_admissao, f.matricula, f.data_demissao,
-                f.Pessoa_id, f.Cargo_id,
-                p.nome AS nome_pessoa,
-                c.nome AS nome_cargo,
-                f.observacoes
+                   f.Pessoa_id, f.Cargo_id,
+                   p.nome AS nome_pessoa,
+                   c.nome AS nome_cargo,
+                   f.observacoes
             FROM funcionario f
             INNER JOIN pessoa p ON f.Pessoa_id = p.id
             INNER JOIN cargo c ON f.Cargo_id = c.id
@@ -491,9 +513,7 @@ class Funcionario:
             ])
 
         if imprimir:
-            from tabulate import tabulate
-            cabecalhos = ["ID", "Nome", "Matrícula", "Admissão", "Cargo", "Observações"]
-            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+            print(tabulate(dados_tabela, headers=["ID", "Nome", "Matrícula", "Admissão", "Cargo", "Observações"], tablefmt="grid"))
 
         return funcionarios
 
