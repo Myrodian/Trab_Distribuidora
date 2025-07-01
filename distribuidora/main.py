@@ -610,88 +610,68 @@ def menu_cargos():
         print("Opção inválida.")
         return menu_cargos()
     
-def inserir_funcionario():
-    print("\n--- Inserir Novo Funcionário ---")
-
-    # Mostra lista de pessoas cadastradas
-    print("\n--- Pessoas Cadastradas ---")
+def inserir_funcionario(): 
+    # Lista pessoas cadastradas
     pessoas = Pessoa.listar_todas(imprimir=True)
     try:
         pessoa_id = int(input("Digite o ID da pessoa que será o funcionário: ").strip())
     except ValueError:
-        print("ID inválido.")
         return
-    # Verifica se a pessoa existe
+
     if not any(p.id == pessoa_id for p in pessoas):
-        print("Pessoa com ID informado não encontrada.")
-        return
-    # 🔒 Verifica se a pessoa já está empregada (sem data de demissão)
+        print("Pessoa não encontrada.")
+        return inserir_funcionario()
+
     vinculo_ativo = read_data(
         "SELECT id FROM funcionario WHERE Pessoa_id = %s AND data_demissao IS NULL",
         (pessoa_id,)
     )
     if vinculo_ativo:
-        print("Esta pessoa já está vinculada à empresa como funcionário ativo.")
-        print("Não é possível cadastrar novamente sem registrar uma data de demissão.")
-        return menu_funcionario()
-    # Mostra lista de cargos
-    print("\n--- Cargos Cadastrados ---")
+        print("Essa pessoa já está vinculada a um funcionário ativo.")
+        return inserir_funcionario()
+    # Lista cargos cadastrados
     cargos = Cargo.listar_todos(imprimir=True)
     try:
         cargo_id = int(input("Digite o ID do cargo: ").strip())
     except ValueError:
-        print("ID inválido.")
         return
 
     if not any(c[0] == cargo_id for c in cargos):
-        print("Cargo com ID informado não encontrado.")
+        print("Cargo não encontrado.")
         return menu_funcionario()
     # Data de admissão
     while True:
         data_admissao = input("Digite a data de admissão (YYYY-MM-DD): ").strip()
         if not data_admissao:
-            print("Data obrigatória.")
+            print("Data de admissão não pode ser vazia.")
             continue
         partes = data_admissao.split("-")
         if len(partes) == 3 and all(p.isdigit() for p in partes) and len(partes[0]) == 4:
             break
-        print("Formato inválido. Use YYYY-MM-DD.")
     # Matrícula com prefixo "MAT"
     while True:
         matricula = input("Digite a matrícula iniciando com 'MAT' (máx. 20 caracteres): ").strip()
-        
         if not matricula:
-            print("Matrícula obrigatória.")
+            print("Matrícula não pode ser vazia.")
             continue
         if not matricula.upper().startswith("MAT"):
             print("A matrícula deve começar com 'MAT'.")
             continue
         if len(matricula) > 20:
-            print("Matrícula muito longa.")
+            print("Matrícula muito longa. Máximo de 20 caracteres.")
             continue
-        # Verifica se já existe essa matrícula no banco (ativa ou não)
         duplicada = read_data("SELECT id FROM funcionario WHERE matricula = %s", (matricula,))
         if duplicada:
-            print("Esta matrícula já está registrada no sistema. Digite uma matrícula diferente.")
+            print("Matrícula já está em uso por outro funcionário.")
             continue
-        break  # Matrícula válida e única
-    # Data de demissão (opcional)
-    while True:
-        data_demissao = input("Digite a data de demissão (YYYY-MM-DD) ou pressione ENTER para deixar em aberto: ").strip()
-        if not data_demissao:
-            data_demissao = None
-            break
-        partes = data_demissao.split("-")
-        if len(partes) == 3 and all(p.isdigit() for p in partes) and len(partes[0]) == 4:
-            break
-        print("Formato inválido. Use YYYY-MM-DD.")
+        break
     # Observações (opcional)
     observacoes = input("Digite observações (opcional): ").strip() or None
-    # Criação do objeto e salvamento
+
     funcionario = Funcionario(
         data_admissao=data_admissao,
         matricula=matricula,
-        data_demissao=data_demissao,
+        data_demissao=None,  # Sempre None
         pessoa_id=pessoa_id,
         cargo_id=cargo_id,
         observacoes=observacoes
@@ -703,19 +683,18 @@ def inserir_funcionario():
 def editar_funcionario():
     print("\n--- Funcionários Cadastrados ---")
     funcionarios = Funcionario.listar_todos(imprimir=True)
-    
     try:
         id_editar = int(input("Digite o ID do funcionário que deseja editar: ").strip())
     except ValueError:
         print("ID inválido.")
-        return
+        return menu_funcionario()
 
     funcionario = Funcionario()
     if not funcionario.carregar(id_editar):
+        print("Funcionário não encontrado.")
         return menu_funcionario()
-    
-    print("\nPressione ENTER para manter o valor atual.")
 
+    print("\nPressione ENTER para manter o valor atual.")
     # Data de admissão
     while True:
         nova_data = input(f"Data de admissão [Atual: {funcionario.data_admissao}]: ").strip()
@@ -726,7 +705,6 @@ def editar_funcionario():
             funcionario.data_admissao = nova_data
             break
         print("Formato inválido. Use YYYY-MM-DD.")
-
     # Matrícula
     while True:
         nova_matricula = input(f"Matrícula [Atual: {funcionario.matricula}]: ").strip()
@@ -748,16 +726,6 @@ def editar_funcionario():
             continue
         funcionario.matricula = nova_matricula
         break
-    # Data de demissão
-    while True:
-        nova_demissao = input(f"Data de demissão [Atual: {funcionario.data_demissao or '---'}] ou ENTER para manter: ").strip()
-        if not nova_demissao:
-            break
-        partes = nova_demissao.split("-")
-        if len(partes) == 3 and all(p.isdigit() for p in partes) and len(partes[0]) == 4:
-            funcionario.data_demissao = nova_demissao
-            break
-        print("Formato inválido. Use YYYY-MM-DD.")
     # Observações
     nova_obs = input(f"Observações [Atual: {funcionario.observacoes or 'Nenhuma'}]: ").strip()
     if nova_obs:
@@ -771,13 +739,13 @@ def deletar_funcionario():
     funcionarios = Funcionario.listar_todos(imprimir=True)
     if not funcionarios:
         print("Nenhum funcionário ativo encontrado.")
-        return
+        return menu_funcionario()
 
     try:
         id_escolhido = int(input("Digite o ID do funcionário que deseja desligar: ").strip())
     except ValueError:
         print("ID inválido.")
-        return
+        return inserir_funcionario()
 
     query = """
         SELECT f.id, f.data_admissao, f.matricula, f.data_demissao,
@@ -792,7 +760,7 @@ def deletar_funcionario():
     result = read_data(query, (id_escolhido,))
     if not result:
         print("Funcionário não encontrado.")
-        return
+        return menu_funcionario()
 
     row = result[0]
     if row[3] is not None:
@@ -814,12 +782,19 @@ def deletar_funcionario():
     if confirmar != 's':
         print("Operação cancelada.")
         return menu_funcionario()
+
     data_hoje = datetime.now().strftime('%Y-%m-%d')
-    sucesso = execute_command("UPDATE funcionario SET data_demissao = %s WHERE id = %s", (data_hoje, id_escolhido))
+
+    # Soft delete: atualiza data_demissao e seta Pessoa_id como NULL
+    query_update = "UPDATE funcionario SET data_demissao = %s, Pessoa_id = NULL WHERE id = %s"
+    sucesso = execute_command(query_update, (data_hoje, id_escolhido))
+
     if sucesso:
-        print(f"Funcionário desligado com sucesso em {data_hoje}.")
+        print(f"Funcionário desligado com sucesso em {data_hoje}. Pessoa_id removido (soft delete).")
     else:
         print("Erro ao desligar o funcionário.")
+
+    return menu_funcionario()
 
 def menu_funcionario():
     Funcionario.listar_todos(imprimir=True)
