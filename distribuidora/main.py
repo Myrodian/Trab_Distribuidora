@@ -24,7 +24,7 @@ def adicionar_pessoas():
                 ano, mes, dia = partes
                 if len(ano) == 4 and len(mes) == 2 and len(dia) == 2:
                     break
-        print("Data de nascimento deve estar no formato YYYY-MM-DD. Tente novamente.")
+        print("Data de nascimento deve estar no formato (YYYY-MM-DD). Tente novamente.")
 
     observacoes = input("Alguma observação? (opcional): ").strip()
     
@@ -138,7 +138,7 @@ def menu_pessoas():
     Pessoa.listar_todas(imprimir=True)
 
     print("<========================================> Menu Pessoas <========================================>")
-    print("0 - Voltar ao menu principal")
+    print("0 - Sair")
     print("1 - Adicionar pessoa")
     print("2 - Editar pessoa")
     print("3 - Deletar pessoa")
@@ -146,7 +146,7 @@ def menu_pessoas():
     opcao = input("Escolha uma opção: ")
 
     if opcao == "0":
-        return menu()
+        return
     elif opcao == "1":
         return adicionar_pessoas()
     elif opcao == "2":
@@ -980,5 +980,5 @@ def menu():
 
 if __name__ == '__main__':
     generate_data()
-    menu_funcionario()
+    menu_pessoas()
     close_connection()
