@@ -127,17 +127,17 @@ def generate_data():
 
     if not read_data('SELECT id FROM fornecedor'):
         command = (
-            'INSERT INTO fornecedor (cnpj, nome_fantasia, email_contato, observacoes, Rua_id) VALUES '
-            '("12.345.678/0001-01", "Queijos Minas Ltda", "contato@queijosminas.com", NULL, 1), '
-            '("98.765.432/0001-02", "Delícias do Campo", "vendas@deliciasdocampo.com", NULL, 2), '
-            '("45.678.912/0001-03", "Sabor da Serra", "comercial@sabordaserra.com", NULL, 3), '
-            '("23.456.789/0001-04", "Laticínios Brasil", "atendimento@laticiniosbrasil.com", NULL, 4), '
-            '("67.890.123/0001-05", "Produtos Naturais Vale", "suporte@pvale.com", NULL, 5), '
-            '("34.567.890/0001-06", "Artesanal Sul", "faleconosco@artesanalsul.com", NULL, 6), '
-            '("56.789.012/0001-07", "Empório Serrano", "contato@emporioserrano.com", NULL, 7), '
-            '("78.901.234/0001-08", "Fazenda Bela Vista", "comercial@belavista.com", NULL, 8), '
-            '("89.012.345/0001-09", "Sabores do Interior", "vendas@saboresinterior.com", NULL, 9), '
-            '("90.123.456/0001-10", "Raízes Gourmet", "raizes@gourmet.com", NULL, 10)'
+            'INSERT INTO fornecedor (cnpj, nome_fantasia, email_contato, observacoes) VALUES '
+            '("12.345.678/0001-01", "Queijos Minas Ltda", "contato@queijosminas.com", NULL), '
+            '("98.765.432/0001-02", "Delícias do Campo", "vendas@deliciasdocampo.com", NULL), '
+            '("45.678.912/0001-03", "Sabor da Serra", "comercial@sabordaserra.com", NULL), '
+            '("23.456.789/0001-04", "Laticínios Brasil", "atendimento@laticiniosbrasil.com", NULL), '
+            '("67.890.123/0001-05", "Produtos Naturais Vale", "suporte@pvale.com", NULL), '
+            '("34.567.890/0001-06", "Artesanal Sul", "faleconosco@artesanalsul.com", NULL), '
+            '("56.789.012/0001-07", "Empório Serrano", "contato@emporioserrano.com", NULL), '
+            '("78.901.234/0001-08", "Fazenda Bela Vista", "comercial@belavista.com", NULL), '
+            '("89.012.345/0001-09", "Sabores do Interior", "vendas@saboresinterior.com", NULL), '
+            '("90.123.456/0001-10", "Raízes Gourmet", "raizes@gourmet.com", NULL)'
         )
         execute_command(command)
 
@@ -192,22 +192,22 @@ def generate_data():
 
     if not read_data('SELECT id FROM funcionario'):
         command = (
-            'INSERT INTO funcionario (data_admissao, matricula, Pessoa_id, Cargo_id, observacoes, data_demissao, Rua_id) VALUES '
-            '("2020-01-15", "MAT001", 1, 1, NULL, NULL, 1), '
-            '("2021-03-10", "MAT002", 2, 6, NULL, NULL, 2), '
-            '("2019-11-20", "MAT003", 3, 3, NULL, NULL, 3), '
-            '("2022-06-05", "MAT004", 4, 6, NULL, NULL, 4), '
-            '("2021-08-17", "MAT005", 5, 5, NULL, NULL, 5), '
-            '("2023-02-01", "MAT006", 6, 6, NULL, NULL, 6), '
-            '("2018-07-12", "MAT007", 7, 7, NULL, NULL, 7), '
-            '("2020-09-30", "MAT008", 8, 8, NULL, NULL, 8), '
-            '("2021-12-11", "MAT009", 9, 9, NULL, NULL, 9), '
-            '("2019-04-03", "MAT010", 10, 10, NULL, "2020-05-10", 10), '
-            '("2020-05-27", "MAT011", 11, 4, NULL, NULL, 1), '
-            '("2022-01-22", "MAT012", 12, 5, NULL, NULL, 2), '
-            '("2023-04-14", "MAT013", 13, 6, NULL, "2025-03-27", 3), '
-            '("2021-10-19", "MAT014", 14, 7, NULL, NULL, 4), '
-            '("2020-12-01", "MAT015", 15, 8, NULL, NULL, 5)'
+            'INSERT INTO funcionario (data_admissao, matricula, Pessoa_id, Cargo_id, observacoes, data_demissao) VALUES '
+            '("2020-01-15", "MAT001", 1, 1, NULL, NULL), '
+            '("2021-03-10", "MAT002", 2, 6, NULL, NULL), '
+            '("2019-11-20", "MAT003", 3, 3, NULL, NULL), '
+            '("2022-06-05", "MAT004", 4, 6, NULL, NULL), '
+            '("2021-08-17", "MAT005", 5, 5, NULL, NULL), '
+            '("2023-02-01", "MAT006", 6, 6, NULL, NULL), '
+            '("2018-07-12", "MAT007", 7, 7, NULL, NULL), '
+            '("2020-09-30", "MAT008", 8, 8, NULL, NULL), '
+            '("2021-12-11", "MAT009", 9, 9, NULL, NULL), '
+            '("2019-04-03", "MAT010", 10, 10, NULL, "2020-05-10"), '
+            '("2020-05-27", "MAT011", 11, 4, NULL, NULL), '
+            '("2022-01-22", "MAT012", 12, 5, NULL, NULL), '
+            '("2023-04-14", "MAT013", 13, 6, NULL, "2025-03-27"), '
+            '("2021-10-19", "MAT014", 14, 7, NULL, NULL), '
+            '("2020-12-01", "MAT015", 15, 8, NULL, NULL)'
         )
         execute_command(command)
 
@@ -263,7 +263,7 @@ def generate_data():
         )
         execute_command(command)
 
-    if not read_data('SELECT id FROM entrega'):
+    if not read_data('SELECT * FROM entrega'):
         command = (
             'INSERT INTO Entrega (numero_endereco, data_entregue, Funcionario_id, Pedido_id) VALUES '
             '(738, "2023-02-15 09:12:00", 2, 1), '
@@ -278,12 +278,12 @@ def generate_data():
             '(921, "2024-10-01 14:30:00", 4, 10), '
             '(578, "2025-06-05 09:45:00", 6, 11), '
             '(337, NULL, 13, 12), '
-            '(404, "2023-03-23 16:05:00", 2, 13), '
+            '(404, "2023-03-23 16:05:00", 13, 13), '
             '(810, NULL, 4, 14), '
-            '(690, "2024-05-02 18:40:00", 6, 15), '
+            '(690, "2024-05-02 18:40:00", 13, 15), '
             '(205, "2023-12-14 13:55:00", 13, 16), '
             '(754, NULL, 2, 17), '
-            '(146, "2025-02-20 11:50:00", 4, 18), '
+            '(146, "2025-02-20 11:50:00", 13, 18), '
             '(829, NULL, 6, 19), '
             '(312, "2024-11-11 08:22:00", 13, 20)'
         )

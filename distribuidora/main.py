@@ -142,6 +142,7 @@ def menu_pessoas():
     print("1 - Adicionar pessoa")
     print("2 - Editar pessoa")
     print("3 - Deletar pessoa")
+    print("4 - Ir para o menu das consultas do trabalho")
 
     opcao = input("Escolha uma opção: ")
 
@@ -153,6 +154,8 @@ def menu_pessoas():
         return editar_pessoas()
     elif opcao == "3":
         return deletar_pessoas()
+    elif opcao == "4":
+        menu_trabalho()
     else:
         print("Opção inválida.")
         return menu_pessoas()
@@ -892,12 +895,18 @@ def menu_juncoes():
 def menu_group_by_having():
     print("<========================================> Menu Group By e Having <========================================>")
     print("0 - Voltar")
-    print("1 - Exibir produtos com os seus estoques")
-    print("2 - Exibir todos os produtos com seus fornecedores")
+    print("1 - Exibindo o total de pedidos por cliente")
+    print("2 - Listar quantos produtos cada fornecedor fornece")
     print("3 - Exibir todos os funcionarios com seus nomes e cargos")
     print("4 - exibir todas as entregas para um determinado cliente")
     opcao = input("Digite uma opção: ")
     if opcao == "0":
+        return menu_pessoas()
+    elif opcao == "1":
+        Cliente.total_pedidos_por_cliente()
+        return menu_trabalho()
+    elif opcao == "2":
+        Fornecedor.listar_quantos_produtos_fornecem()
         return menu_trabalho()
 
 def menu_funcoes_datas():
@@ -924,7 +933,7 @@ def menu_consultas_aninhadas():
 
 def menu_trabalho():
     print("<========================================> Menu Trabalho <========================================>")
-    print("0 - Voltar ao menu principal")
+    print("0 - Voltar")
     print("1 - consultas com junção")
     print("2 - consultas com group by e funções agregadas e/ou having")
     print("3 - consultas com funções de datas")
@@ -933,7 +942,7 @@ def menu_trabalho():
     opcao = input("Digite uma opção: ")
 
     if opcao == "0":
-        return menu()
+        return menu_pessoas()
 
     elif opcao == "1":
         menu_juncoes()
