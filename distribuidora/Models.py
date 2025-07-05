@@ -295,6 +295,41 @@ class Fornecedor:
 
         return fornecedores
 
+    @staticmethod
+    def listar_quantos_produtos_fornecem(imprimir=True):
+        query = """
+            SELECT 
+                f.id AS FornecedorID,
+                f.nome_fantasia AS NomeFornecedor,
+                COUNT(p.id) AS fornece_produto
+            FROM 
+                Fornecedor f
+            LEFT JOIN 
+                Produto p ON f.id = p.fornecedor_id
+            GROUP BY 
+                f.id, f.nome_fantasia;
+        """
+        result = read_data(query)
+        fornecedores_produtos = []
+        dados_tabela = []
+
+        for row in result:
+            fornecedores_produtos.append({
+                "FornecedorID": row[0],
+                "NomeFornecedor": row[1],
+                "ForneceProduto": row[2]
+            })
+            dados_tabela.append([
+                row[0],  # FornecedorID
+                row[1],  # NomeFornecedor
+                row[2]  # ForneceProduto
+            ])
+        if imprimir:
+            cabecalhos = ["Fornecedor ID", "Nome do Fornecedor", "Quantidade de Produtos"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+        return fornecedores_produtos
+
+
 class Telefone:
     def __init__(self, id=None, tipo=None, ddd=None, numero=None, pessoa_id=None):
         self.id = id
@@ -910,6 +945,40 @@ class Cliente:
             print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
 
         return clientes
+
+    @staticmethod
+    def total_pedidos_por_cliente(imprimir=True):
+        query = """ 
+            SELECT 
+                c.id AS cliente_id,
+                COALESCE(MAX(c.nome_fantasia), MAX(p.nome), 'Sem Nome') AS cliente,
+                COALESCE(MAX(c.cnpj), MAX(p.cpf)) AS documento,
+                COUNT(DISTINCT pd.id) AS total_pedidos
+            FROM 
+                Cliente c
+            LEFT JOIN Pessoa_has_Cliente pc ON pc.Cliente_id = c.id
+            LEFT JOIN Pessoa p ON p.id = pc.Pessoa_id
+            JOIN Pedido pd ON c.id = pd.Cliente_id
+            JOIN Produto_has_Pedido pp ON pd.id = pp.Pedido_id
+            GROUP BY c.id
+            ORDER BY total_pedidos DESC;
+        """
+        result = read_data(query)
+        dados_tabela = []
+        for row in result:
+            cliente_id = row[0]
+            nome_exibido = row[1]
+            documento = row[2]
+            total_pedidos = row[3]
+            dados_tabela.append([
+                cliente_id,
+                nome_exibido,
+                documento,
+                total_pedidos
+            ])
+        if imprimir:
+            cabecalhos = ["ID", "Nome/Razão Social", "CPF/CNPJ", "Total de Pedidos"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
 
 class Estado:
     def __init__(self, id=None, nome=None):
