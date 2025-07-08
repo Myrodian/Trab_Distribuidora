@@ -848,11 +848,6 @@ def menu_produtos():
 
     elif opcao == "3":
         return deletar_produto()
-
-    #TODO elif opcao == "4": alterar estoque de tal produto (hardcoded)
-    #TODO fazer a opção de alterar o estoque de um produto específico
-    #TODO fazer movimentação de estoque, ou seja, adicionar ou remover quantidade de um produto específico (softcoded)
-
     else:
         print("Opção inválida.")
         return menu_produtos()
@@ -897,39 +892,90 @@ def menu_group_by_having():
     print("0 - Voltar")
     print("1 - Exibindo o total de pedidos por cliente")
     print("2 - Listar quantos produtos cada fornecedor fornece")
-    print("3 - Exibir todos os funcionarios com seus nomes e cargos")
-    print("4 - exibir todas as entregas para um determinado cliente")
+    print("3 - Exibir quantos clientes (distintos) cada funcionario atende")
+    print("4 - Listar todos os cargos e quantos funcionários estão vinculados a cada cargo")
     opcao = input("Digite uma opção: ")
     if opcao == "0":
         return menu_pessoas()
     elif opcao == "1":
         Cliente.total_pedidos_por_cliente()
-        return menu_trabalho()
+        return menu_group_by_having()
     elif opcao == "2":
         Fornecedor.listar_quantos_produtos_fornecem()
-        return menu_trabalho()
+        return menu_group_by_having()
+    elif opcao == "3":
+        Funcionario.listar_quantos_clientesP_funcionario()
+        return menu_group_by_having()
+    elif opcao == "4":
+        Cargo.listar_qtdsfuncionario_por_cargo()
+        return menu_group_by_having()
+    else:
+        print("Opção inválida.")
+        return menu_group_by_having()
 
 def menu_funcoes_datas():
     print("<========================================> Menu Funções de Datas <========================================>")
     print("0 - Voltar")
-    print("1 - Exibir produtos com os seus estoques")
-    print("2 - Exibir todos os produtos com seus fornecedores")
-    print("3 - Exibir todos os funcionarios com seus nomes e cargos")
-    print("4 - exibir todas as entregas para um determinado cliente")
+    print("1 - pega quantas entregas cada um dos  funcionarios (que são motoristas) fez no segundo semestre de 2024")
+    print("2 - Exibir dias de atraso das entregas")
+    print("3 - Exibir entregas entre um intervalo de tempo")
+    print("4 - Qual o tempo que o funcinario esta ativo (data de admissão e data de demissão)")
     opcao = input("Digite uma opção: ")
     if opcao == "0":
         return menu_trabalho()
+    elif opcao == "1":
+        Funcionario.listar_qts_entregas_segundosemestre_de2024()
+        return menu_funcoes_datas()
+    elif opcao == "2":
+        Entrega.listar_dias_atraso()
+        return menu_funcoes_datas()
+    elif opcao == "3":
+        try:
+            data_inicio = input("Digite a data inicial (AAAA-MM-DD): ").strip()
+            data_fim = input("Digite a data final (AAAA-MM-DD): ").strip()
+
+            # Validação simples de formato
+            datetime.strptime(data_inicio, "%Y-%m-%d")
+            datetime.strptime(data_fim, "%Y-%m-%d")
+
+            Entrega.listar_between_dates(data_inicio, data_fim)
+
+        except ValueError:
+            print("⚠️ Datas inválidas! Use o formato correto: AAAA-MM-DD.")
+
+        return menu_funcoes_datas()
+    elif opcao == "4":
+        Funcionario.dias_ativos()
+        return menu_funcoes_datas()
+    else:
+        print("Opção inválida.")
+        return menu_funcoes_datas()
 
 def menu_consultas_aninhadas():
     print("<========================================> Menu Consultas Aninhadas <========================================>")
     print("0 - Voltar")
-    print("1 - Exibir produtos com os seus estoques")
-    print("2 - Exibir todos os produtos com seus fornecedores")
-    print("3 - Exibir todos os funcionarios com seus nomes e cargos")
-    print("4 - exibir todas as entregas para um determinado cliente")
+    print("1 - Calcule a media atual da quantidade de produtos em estoque e verifique quais produtos estão acima dessa média")
+    print("2 - Calcula os clientes que mais gastaram com produtos")
+    print("3 - Retorna a quantidade de telefones por pessoa")
+    print("4 - Lista todos os funcionários e o total de funcionários por cargo")
     opcao = input("Digite uma opção: ")
     if opcao == "0":
         return menu_trabalho()
+    elif opcao == "1":
+        Produto.listar_acima_media_estoque()
+        return menu_consultas_aninhadas()
+    elif opcao == "2":
+        Produto.mais_gastos()
+        return menu_consultas_aninhadas()
+    elif opcao == "3":
+        Pessoa.qtd_telefones_por_pessoa()
+        return menu_consultas_aninhadas()
+    elif opcao == "4":
+        Funcionario.listar_funcionarios_e_total_por_cargo()
+        return menu_consultas_aninhadas()
+    else:
+        print("Opção inválida.")
+        return menu_consultas_aninhadas()
 
 def menu_trabalho():
     print("<========================================> Menu Trabalho <========================================>")
