@@ -110,6 +110,45 @@ class Pessoa:
 
         return pessoas  # retorna objetos Pessoa
 
+
+
+    @staticmethod
+    def qtd_telefones_por_pessoa(imprimir=True):
+        query = """
+            SELECT 
+                p.id,
+                p.nome,
+                (
+                    SELECT COUNT(*)
+                    FROM Telefone t
+                    WHERE t.Pessoa_id = p.id
+                ) AS quantidade_telefones
+            FROM Pessoa p;
+        """
+        result = read_data(query)
+
+        pessoas_telefones = []
+        if imprimir:
+            dados_tabela = []
+            for row in result:
+                pessoa = {
+                    'id': row[0],
+                    'nome': row[1],
+                    'quantidade_telefones': row[2]
+                }
+                pessoas_telefones.append(pessoa)
+
+                dados_tabela.append([
+                    pessoa['id'],
+                    pessoa['nome'],
+                    pessoa['quantidade_telefones']
+                ])
+            cabecalhos = ["ID", "Nome", "Qtd. Telefones"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return pessoas_telefones  # retorna lista de dicionários
+
+
 class Cargo:
     def __init__(self, id=None, nome=None, salario_categoria=None, nivel_hierarquia=None, observacoes=None):
         self.id = id
@@ -192,6 +231,37 @@ class Cargo:
 
         return resultados
 
+    @staticmethod
+    def listar_qtdsfuncionario_por_cargo(imprimir=True):
+        query = """ 
+            SELECT 
+                c.nome AS nome_cargo,
+                COUNT(f.id) AS total_funcionarios
+            FROM 
+                Cargo c
+            LEFT JOIN 
+                Funcionario f ON f.Cargo_id = c.id
+            GROUP BY 
+                c.id, c.nome;
+        """
+
+        result = read_data(query)
+
+        if result is None:
+            print("Erro ao buscar quantidade de funcionários por cargo.")
+            return []
+
+        dados_tabela = []
+        for row in result:
+            dados_tabela.append([
+                row[0],  # Nome do cargo
+                row[1]  # Total de funcionários
+            ])
+
+        if imprimir:
+            print(tabulate(dados_tabela, headers=["Cargo", "Total de Funcionários"], tablefmt="grid"))
+
+        return result
 class Fornecedor:
     def __str__(self):
         return self.nome_fantasia if self.nome_fantasia else self.cnpj
@@ -552,6 +622,173 @@ class Funcionario:
 
         return funcionarios
 
+    @staticmethod
+    def listar_quantos_clientesP_funcionario(imprimir=True):
+        query = """
+            SELECT 
+                f.id AS funcionario_id,
+                p.nome AS nome_funcionario,
+                COUNT(pe.Cliente_id) AS total_clientes_atendidos
+            FROM 
+                Entrega e
+            JOIN 
+                Funcionario f ON f.id = e.Funcionario_id
+            JOIN 
+                Pessoa p ON p.id = f.Pessoa_id
+            JOIN 
+                Pedido pe ON pe.id = e.Pedido_id
+            WHERE 
+                e.data_entregue IS NOT NULL
+            GROUP BY 
+                f.id, p.nome
+            HAVING 
+                COUNT(pe.Cliente_id) > 0;
+        """
+
+        result = read_data(query)
+
+        if result is None:
+            print("Erro ao buscar dados de clientes por funcionário.")
+            return []
+
+        dados_tabela = []
+        for row in result:
+            dados_tabela.append([
+                row[0],  # ID do funcionário
+                row[1],  # Nome do funcionário
+                row[2]  # Total de clientes atendidos
+            ])
+
+        if imprimir:
+            print(tabulate(dados_tabela, headers=["ID Funcionário", "Nome", "Total de Clientes"], tablefmt="grid"))
+
+        return result
+
+    @staticmethod
+    def listar_qts_entregas_segundosemestre_de2024(imprimir=True):
+        query = """
+            SELECT 
+                f.id AS funcionario_id,
+                p.nome AS nome_funcionario,
+                COUNT(e.id) AS total_entregas
+            FROM 
+                Entrega e
+            JOIN 
+                Funcionario f ON f.id = e.Funcionario_id
+            JOIN 
+                Pessoa p ON p.id = f.Pessoa_id
+            WHERE 
+                e.data_entregue BETWEEN '2024-07-01' AND '2024-12-31'
+            GROUP BY 
+                f.id, p.nome;
+        """
+
+        result = read_data(query)
+
+        if result is None:
+            print("Erro ao buscar dados de entregas no segundo semestre de 2024.")
+            return []
+
+        dados_tabela = []
+        for row in result:
+            dados_tabela.append([
+                row[0],  # ID do funcionário
+                row[1],  # Nome do funcionário
+                row[2]   # Total de entregas
+            ])
+
+        if imprimir:
+            print(tabulate(dados_tabela, headers=["ID Funcionário", "Nome", "Total de Entregas"], tablefmt="grid"))
+
+        return result
+
+    @staticmethod
+    def dias_ativos(imprimir=True):
+        query = """
+               SELECT 
+                   f.id AS funcionario_id,
+                   p.nome AS nome_funcionario,
+                   f.data_admissao,
+                   f.data_demissao,
+                   DATEDIFF(
+                       IFNULL(f.data_demissao, CURDATE()),
+                       f.data_admissao
+                   ) AS dias_ativos
+               FROM 
+                   Funcionario f
+               JOIN 
+                   Pessoa p ON p.id = f.Pessoa_id;
+           """
+        result = read_data(query)
+
+        funcionarios = []
+        dados_tabela = []
+
+        for row in result:
+            funcionario = {
+                'id': row[0],
+                'nome': row[1],
+                'data_admissao': row[2],
+                'data_demissao': row[3],
+                'dias_ativos': row[4]
+            }
+            funcionarios.append(funcionario)
+
+            dados_tabela.append([
+                funcionario['id'],
+                funcionario['nome'],
+                funcionario['data_admissao'],
+                funcionario['data_demissao'] or "Ativo",
+                funcionario['dias_ativos']
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Nome", "Admissão", "Demissão", "Dias Ativos"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return funcionarios
+
+    @staticmethod
+    def listar_funcionarios_e_total_por_cargo(imprimir=True):
+        query = """
+            SELECT 
+                p.nome AS nome_pessoa,
+                (
+                    SELECT c.nome 
+                    FROM Cargo c 
+                    WHERE c.id = f.Cargo_id
+                ) AS nome_cargo,
+                (
+                    SELECT COUNT(*) 
+                    FROM Funcionario f2 
+                    WHERE f2.Cargo_id = f.Cargo_id
+                ) AS total_funcionarios_mesmo_cargo
+            FROM Funcionario f
+            JOIN Pessoa p ON p.id = f.Pessoa_id;
+        """
+        result = read_data(query)
+
+        funcionarios = []
+        if imprimir:
+            dados_tabela = []
+            for row in result:
+                funcionario = {
+                    'nome_pessoa': row[0],
+                    'nome_cargo': row[1],
+                    'total_mesmo_cargo': row[2]
+                }
+                funcionarios.append(funcionario)
+
+                dados_tabela.append([
+                    funcionario['nome_pessoa'],
+                    funcionario['nome_cargo'],
+                    funcionario['total_mesmo_cargo']
+                ])
+            cabecalhos = ["Nome da Pessoa", "Cargo", "Total no Mesmo Cargo"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return funcionarios  # lista de dicionários
+
 class Produto:
     def __str__(self):
         return self.nome
@@ -717,6 +954,95 @@ class Produto:
 
         return
 
+    @staticmethod
+    def listar_acima_media_estoque(imprimir=True):
+        query = """
+               SELECT 
+                   pr.id,
+                   pr.nome,
+                   es.quantidade_atual
+               FROM 
+                   Produto pr
+               JOIN 
+                   Estoque es ON es.Produto_id = pr.id
+               WHERE 
+                   es.quantidade_atual > (
+                       SELECT AVG(quantidade_atual)
+                       FROM Estoque
+                   );
+           """
+        result = read_data(query)
+
+        produtos = []
+        dados_tabela = []
+
+        for row in result:
+            produto = {
+                'id': row[0],
+                'nome': row[1],
+                'quantidade_atual': row[2]
+            }
+            produtos.append(produto)
+
+            dados_tabela.append([
+                produto['id'],
+                produto['nome'],
+                produto['quantidade_atual']
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Nome do Produto", "Quantidade em Estoque"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return produtos
+
+    @staticmethod
+    def mais_gastos(imprimir=True):
+        query = """
+            SELECT DISTINCT
+                c.id,
+                COALESCE(c.nome_fantasia, (
+                    SELECT p.nome
+                    FROM Pessoa_has_Cliente phc_sub
+                    JOIN Pessoa p ON p.id = phc_sub.Pessoa_id
+                    WHERE phc_sub.Cliente_id = c.id
+                    LIMIT 1
+                )) AS cliente,
+                (
+                    SELECT SUM(pp.quantidade * pr.preco_unitario)
+                    FROM Pedido pe
+                    JOIN Produto_has_Pedido pp ON pp.Pedido_id = pe.id
+                    JOIN Produto pr ON pr.id = pp.Produto_id
+                    WHERE pe.Cliente_id = c.id
+                ) AS total_gasto
+            FROM Cliente c
+            ORDER BY total_gasto DESC;
+        """
+        result = read_data(query)
+
+        clientes = []
+        dados_tabela = []
+
+        for row in result:
+            cliente = {
+                'id': row[0],
+                'nome': row[1],
+                'total_gasto': row[2] if row[2] is not None else 0.0
+            }
+            clientes.append(cliente)
+
+            dados_tabela.append([
+                cliente['id'],
+                cliente['nome'],
+                f"R$ {cliente['total_gasto']:.2f}"
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID do Cliente", "Nome do Cliente", "Total Gasto"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return clientes
+
 class EntregaProduto:
     def __init__(self, entrega_id=None, produto_id=None, quantidade=None, preco_unitario=None):
         self.entrega_id = entrega_id
@@ -828,6 +1154,112 @@ class Entrega:
             WHERE ep.Entrega_id = %s
         """, (self.id,))
         return result
+    @staticmethod
+    def listar_dias_atraso(imprimir=True):
+        query = """
+            SELECT 
+                e.id AS entrega_id,
+                pe.id AS pedido_id,
+                COALESCE(cli.nome_fantasia, pes.nome) AS cliente,
+                pe.previsao_entrega,
+                e.data_entregue,
+                DATEDIFF(e.data_entregue, pe.previsao_entrega) AS dias_atraso
+            FROM 
+                Entrega e
+            JOIN 
+                Pedido pe ON pe.id = e.Pedido_id
+            JOIN 
+                Cliente cli ON cli.id = pe.Cliente_id
+            LEFT JOIN 
+                Pessoa_has_Cliente phc ON phc.Cliente_id = cli.id
+            LEFT JOIN 
+                Pessoa pes ON pes.id = phc.Pessoa_id
+            WHERE 
+                e.data_entregue IS NOT NULL
+                AND e.data_entregue > pe.previsao_entrega
+            GROUP BY 
+                e.id, pe.id, cliente, pe.previsao_entrega, e.data_entregue;
+        """
+        result = read_data(query)
+
+        entregas = []
+        dados_tabela = []
+
+        for row in result:
+            entrega = {
+                'entrega_id': row[0],
+                'pedido_id': row[1],
+                'cliente': row[2],
+                'previsao_entrega': row[3],
+                'data_entregue': row[4],
+                'dias_atraso': row[5]
+            }
+            entregas.append(entrega)
+
+            dados_tabela.append([
+                entrega['entrega_id'],
+                entrega['pedido_id'],
+                entrega['cliente'],
+                entrega['previsao_entrega'],
+                entrega['data_entregue'],
+                entrega['dias_atraso']
+            ])
+
+        if imprimir:
+            cabecalhos = ["Entrega ID", "Pedido ID", "Cliente", "Previsão Entrega", "Data Entregue", "Dias de Atraso"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return entregas
+
+    @staticmethod
+    def listar_between_dates(initial, end, imprimir=True):
+        query = """
+            SELECT 
+                e.id, e.numero_endereco, pe.previsao_entrega, e.data_entregue,
+                pe.status, pe.observacoes, e.Funcionario_id, pe.Cliente_id
+            FROM 
+                entrega e
+            JOIN 
+                pedido pe ON pe.id = e.Pedido_id
+            WHERE 
+                e.data_entregue BETWEEN %s AND %s
+            ORDER BY 
+                e.id;
+        """
+        result = read_data(query, (initial, end))
+
+        entregas = []
+        dados_tabela = []
+
+        for row in result:
+            entrega = {
+                'id': row[0],
+                'numero_endereco': row[1],
+                'previsao_entrega': row[2],
+                'data_entregue': row[3],
+                'status': row[4],
+                'observacoes': row[5],
+                'funcionario_id': row[6],
+                'cliente_id': row[7],
+            }
+            entregas.append(entrega)
+
+            dados_tabela.append([
+                entrega['id'],
+                entrega['data_entregue'],
+                entrega['previsao_entrega'],
+                entrega['status'],
+                entrega['numero_endereco']
+            ])
+
+        if imprimir:
+            cabecalhos = ["ID", "Data Entregue", "Previsão Entrega", "Status", "Nº Endereço"]
+            print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+        return entregas
+
+
+
 
 class Cliente:
     def __str__(self):
@@ -979,6 +1411,29 @@ class Cliente:
         if imprimir:
             cabecalhos = ["ID", "Nome/Razão Social", "CPF/CNPJ", "Total de Pedidos"]
             print(tabulate(dados_tabela, headers=cabecalhos, tablefmt="grid"))
+
+    @staticmethod
+    def mostrar_mais_que_media(imprimir = True):
+        query = """
+                SELECT 
+            c.id,
+            COALESCE(c.nome_fantasia, p.nome) AS nome_cliente,
+            COUNT(pe.id) AS total_pedidos
+        FROM 
+            Cliente c
+        LEFT JOIN Pessoa_has_Cliente phc ON phc.Cliente_id = c.id
+        LEFT JOIN Pessoa p ON phc.Pessoa_id = p.id
+        JOIN Pedido pe ON pe.Cliente_id = c.id
+        GROUP BY c.id, nome_cliente
+        HAVING COUNT(pe.id) > (
+            SELECT AVG(sub.total_pedidos)
+            FROM (
+                SELECT COUNT(*) AS total_pedidos
+                FROM Pedido
+                GROUP BY Cliente_id
+            ) AS sub
+        );
+        """
 
 class Estado:
     def __init__(self, id=None, nome=None):

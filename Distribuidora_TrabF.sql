@@ -356,13 +356,13 @@ CREATE TABLE IF NOT EXISTS `Distribuidora`.`Pessoa_has_Fornecedor` (
   CONSTRAINT `fk_Pessoa_has_Fornecedor_Pessoa1`
     FOREIGN KEY (`Pessoa_id`)
     REFERENCES `Distribuidora`.`Pessoa` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_Pessoa_has_Fornecedor_Fornecedor1`
     FOREIGN KEY (`Fornecedor_id`)
     REFERENCES `Distribuidora`.`Fornecedor` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
