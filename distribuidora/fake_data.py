@@ -96,16 +96,16 @@ def generate_data():
     if not read_data('SELECT id FROM cargo'):
         command = (
             'INSERT INTO cargo (nome, salario_categoria, nivel_hierarquia, observacoes) VALUES '
-            '("Gerente Geral", "R$ 10.000", 1, "Responsável por toda a operação da distribuidora"), '
-            '("Supervisor de Logística", "R$ 6.500", 2, "Supervisiona as atividades de transporte e estoque"), '
-            '("Analista de Compras", "R$ 5.000", 3, "Analisa fornecedores e realiza negociações"), '
-            '("Vendedor Externo", "R$ 4.200", 4, "Realiza visitas a clientes e fechamento de pedidos"), '
-            '("Assistente Administrativo", "R$ 3.500", 5, "Apoia tarefas administrativas e financeiras"), '
-            '("Motorista", "R$ 3.000", 6, "Realiza entregas de produtos aos clientes"), '
-            '("Auxiliar de Estoque", "R$ 2.800", 7, "Organiza e controla o estoque no armazém"), '
-            '("Estagiário de Logística", "R$ 1.200", 8, "Apoia a equipe de logística nas rotinas diárias"), '
-            '("Técnico de Qualidade", "R$ 4.700", 4, "Verifica padrões e normas dos produtos distribuídos"), '
-            '("Coordenador Comercial", "R$ 6.800", 2, "Coordena a equipe de vendas e estratégias comerciais")'
+            '("Gerente Geral", 10000, 1, "Responsável por toda a operação da distribuidora"), '
+            '("Supervisor de Logística", 6500, 2, "Supervisiona as atividades de transporte e estoque"), '
+            '("Analista de Compras", 5000, 3, "Analisa fornecedores e realiza negociações"), '
+            '("Vendedor Externo", 4200, 4, "Realiza visitas a clientes e fechamento de pedidos"), '
+            '("Assistente Administrativo", 3500, 5, "Apoia tarefas administrativas e financeiras"), '
+            '("Motorista", 3000, 6, "Realiza entregas de produtos aos clientes"), '
+            '("Auxiliar de Estoque", 2800, 7, "Organiza e controla o estoque no armazém"), '
+            '("Estagiário de Logística", 1200, 8, "Apoia a equipe de logística nas rotinas diárias"), '
+            '("Técnico de Qualidade", 4700, 4, "Verifica padrões e normas dos produtos distribuídos"), '
+            '("Coordenador Comercial", 6800, 2, "Coordena a equipe de vendas e estratégias comerciais")'
         )
         execute_command(command)
 
