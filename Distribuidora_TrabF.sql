@@ -281,7 +281,7 @@ DROP TABLE IF EXISTS `Distribuidora`.`Estoque` ;
 CREATE TABLE IF NOT EXISTS `Distribuidora`.`Estoque` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `quantidade_atual` INT NOT NULL,
-  `Produto_id` INT NOT NULL,
+   `Produto_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`id`),
   INDEX `fk_Estoque_Produto1_idx` (`Produto_id` ASC)  ,
   UNIQUE INDEX `Produto_id_UNIQUE` (`Produto_id` ASC)  ,

@@ -1166,11 +1166,11 @@ class Entrega:
                 DATEDIFF(e.data_entregue, pe.previsao_entrega) AS dias_atraso
             FROM 
                 Entrega e
-            JOIN 
+            INNER JOIN 
                 Pedido pe ON pe.id = e.Pedido_id
             JOIN 
                 Cliente cli ON cli.id = pe.Cliente_id
-            LEFT JOIN 
+            LEFT OUTER JOIN 
                 Pessoa_has_Cliente phc ON phc.Cliente_id = cli.id
             LEFT JOIN 
                 Pessoa pes ON pes.id = phc.Pessoa_id
