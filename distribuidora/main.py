@@ -858,7 +858,7 @@ def menu_juncoes():
     print("1 - Exibir produtos com os seus estoques")
     print("2 - Exibir todos os produtos com seus fornecedores")
     print("3 - Exibir todos os funcionarios com seus nomes e cargos")
-    print("4 - exibir todos os clientes")
+    print("4 - Exibir todos os clientes")
     opcao = input("Digite uma opção: ")
     if opcao == "0":
         return menu_trabalho()
